@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+import "google/protobuf/duration.proto";
+option go_package = "nanoray/pkg/proto";
+
+service Worker {
+  rpc NewJob(JobRequest) returns (JobResult) {}
+}
+
+service Controller {
+  rpc GetScene(SceneRequest) returns (SceneResult) {}
+  rpc RegisterWorker(WorkerInfo) returns (RegistrationResult) {}
+}
+
+message JobRequest {
+  string sceneSHA = 1;
+  int32  id = 2;
+  int32  x = 3;
+  int32  y = 4;
+  int32  width = 5;
+  int32  height = 6;
+}
+
+message JobResult {
+  StatusCode statusCode = 1;
+  string message = 2;
+  bytes imageData = 3;
+  google.protobuf.Duration timeTaken = 4;
+}
+
+message WorkerInfo {
+  string id = 1;
+  string address = 2;
+  int32  port = 3;
+}
+
+message RegistrationResult {
+  StatusCode statusCode = 1;
+  string message = 2;
+}
+
+message SceneRequest {
+}
+
+message SceneResult {
+}
+
+enum StatusCode {
+  OK = 0;
+  ERROR = 1;
+}
