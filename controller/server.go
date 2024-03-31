@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"sync"
 
-	pb "nanoray/pkg/proto"
+	pb "raynet/pkg/proto"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
@@ -21,26 +22,33 @@ type server struct {
 type WorkerConnection struct {
 	Worker *pb.WorkerInfo
 	Client pb.WorkerClient
+	Conn   *grpc.ClientConn
 }
 
-var workers map[string]WorkerConnection
+var workers sync.Map
+var workerCount int
 
-func (s *server) RegisterWorker(ctx context.Context, worker *pb.WorkerInfo) (*pb.RegistrationResult, error) {
-	log.Printf("Worker: %s connecting from %s:%d", worker.Id, worker.GetAddress(), worker.GetPort())
+func init() {
+	workers = sync.Map{}
+}
+
+func (s *server) RegisterWorker(ctx context.Context, worker *pb.WorkerInfo) (*emptypb.Empty, error) {
+	log.Printf("Worker %s connecting from %s:%d", worker.Id, worker.GetHost(), worker.GetPort())
 
 	// Connect back to the worker
-	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", worker.GetAddress(), worker.GetPort()), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", worker.GetHost(), worker.GetPort()),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return &pb.RegistrationResult{
-			StatusCode: pb.StatusCode_ERROR,
-			Message:    "Failed to connect to worker: " + err.Error(),
-		}, err
+		return nil, err
 	}
 
 	newClient := pb.NewWorkerClient(conn)
-	workers[worker.Id] = WorkerConnection{
-		Worker: worker,
-		Client: newClient,
+
+	// A handshake ping to ensure the worker is connectable via the hostname provided
+	_, err = newClient.Ping(context.Background(), &emptypb.Empty{})
+	if err != nil {
+		log.Printf("Unable to RPC ping worker, handshake failed\n%s", err.Error())
+		return nil, err
 	}
 
 	go func() {
@@ -50,31 +58,42 @@ func (s *server) RegisterWorker(ctx context.Context, worker *pb.WorkerInfo) (*pb
 			if !change {
 				return
 			}
+
 			currentState := conn.GetState()
 			if currentState == connectivity.Idle {
 				log.Printf("Worker %s disconnected", worker.Id)
-				delete(workers, worker.Id)
-				log.Printf("Workers online: %d", len(workers))
+				w, ok := workers.Load(worker.Id)
+				if !ok {
+					return
+				}
+				w.(WorkerConnection).Conn.Close()
+				workers.Delete(worker.Id)
+				workerCount--
+				log.Printf("Workers online: %d", workerCount)
 				return
 			}
 		}
 	}()
 
-	log.Printf("Workers online: %d", len(workers))
+	workers.Store(worker.Id, WorkerConnection{
+		Worker: worker,
+		Client: newClient,
+		Conn:   conn,
+	})
+	workerCount++
 
-	return &pb.RegistrationResult{
-		StatusCode: pb.StatusCode_OK,
-		Message:    "Success",
-	}, nil
+	log.Printf("Workers online: %d", workerCount)
+
+	return &emptypb.Empty{}, nil
 }
 
 func (s *server) GetWorkers(ctx context.Context, in *emptypb.Empty) (*pb.WorkerList, error) {
-	log.Printf("Returning workers")
+	workerList := make([]*pb.WorkerInfo, 0)
 
-	workerList := make([]*pb.WorkerInfo, 0, len(workers))
-	for _, worker := range workers {
-		workerList = append(workerList, worker.Worker)
-	}
+	workers.Range(func(key, value interface{}) bool {
+		workerList = append(workerList, value.(WorkerConnection).Worker)
+		return true
+	})
 
 	sort.Slice(workerList, func(i, j int) bool {
 		return workerList[i].Id < workerList[j].Id

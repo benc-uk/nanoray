@@ -10,7 +10,7 @@ fi
 
 for i in $(seq 0 $((COUNT-1))); do
   export PORT=$i
-  go run nanoray/worker &
+  go run raynet/worker &
   sleep 0.2
 done
 

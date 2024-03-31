@@ -1,9 +1,13 @@
-root = "."
+root = ".."
 tmp_dir = "tmp"
 
 [build]
 include_ext = ["go"]
+include_dir = ["frontend", "pkg"]
 cmd = "go build -o ./tmp/main ./..."
 
 [misc]
 clean_on_exit = true
+
+[screen]
+clear_on_rebuild = true

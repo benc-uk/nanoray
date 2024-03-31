@@ -1,23 +1,35 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
+	"time"
 
-	pb "nanoray/pkg/proto"
-
-	"google.golang.org/grpc"
+	"raynet/pkg/controller"
 )
 
-var ctrlClient pb.ControllerClient
+var portFlag = flag.String("port", "8000", "The port to listen on")
 
 func main() {
+	portNum := os.Getenv("PORT")
+	flag.Parse()
+
+	if portNum == "" {
+		portNum = *portFlag
+	}
+	port, _ := strconv.Atoi(portNum)
+
 	fs := http.FileServer(http.Dir("public"))
 	mux := http.NewServeMux()
 	mux.Handle("/", fs)
 
 	mux.HandleFunc("/api/workers", func(w http.ResponseWriter, r *http.Request) {
-		workers, err := ctrlClient.GetWorkers(r.Context(), nil)
+
+		workers, err := controller.Client.GetWorkers(r.Context(), nil)
 		if err != nil {
 			log.Printf("Failed to get workers\n%s", err.Error())
 			http.Error(w, "Failed to get workers", http.StatusInternalServerError)
@@ -26,19 +38,20 @@ func main() {
 
 		html := ""
 		for _, worker := range workers.Workers {
-			html += `<li>` + worker.Id + ` ` + worker.Address + `</li>`
+			html += `<li>` + worker.Id + ` ` + worker.Host + `</li>`
 		}
 
-		w.Write([]byte(html))
-
+		_, _ = w.Write([]byte(html))
 	})
 
-	conn, err := grpc.Dial("localhost:5000", grpc.WithInsecure())
+	err := controller.Connect(time.Second * 20)
 	if err != nil {
-		log.Fatalf("Failed to connect to controller\n%s", err.Error())
+		log.Fatalf("Failed to connect to controller: %s", err.Error())
 	}
-	ctrlClient = pb.NewControllerClient(conn)
 
-	log.Println("Listening...")
-	http.ListenAndServe(":8000", mux)
+	log.Printf("Frontend HTTP server started on port %d\n", port)
+	err = http.ListenAndServe(fmt.Sprintf(":%d", port), mux)
+	if err != nil {
+		log.Fatalf("Failed to start server\n%s", err.Error())
+	}
 }

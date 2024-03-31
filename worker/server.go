@@ -5,9 +5,10 @@ import (
 	"log"
 	"time"
 
-	pb "nanoray/pkg/proto"
+	pb "raynet/pkg/proto"
 
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type server struct {
@@ -25,4 +26,8 @@ func (s *server) NewJob(ctx context.Context, in *pb.JobRequest) (*pb.JobResult, 
 		Message:    "Success",
 		TimeTaken:  durationpb.New(time.Since(now)),
 	}, nil
+}
+
+func (s *server) Ping(ctx context.Context, in *emptypb.Empty) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
 }

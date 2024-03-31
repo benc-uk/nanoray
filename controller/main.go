@@ -8,7 +8,7 @@ import (
 	"os"
 	"strconv"
 
-	pb "nanoray/pkg/proto"
+	pb "raynet/pkg/proto"
 
 	"google.golang.org/grpc"
 )
@@ -30,8 +30,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to bind to port\n%s", err.Error())
 	}
-
-	workers = make(map[string]WorkerConnection)
 
 	s := grpc.NewServer()
 

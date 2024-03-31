@@ -5,17 +5,18 @@
 
 linters:
   enable:
-    - revive      # Replacement for golint
-    - gofmt       # Runs gofmt as part of the linter
-    - gosec       # Find security issues
-    - wsl         # Whitespace linter
-    - stylecheck  # A few Go style rules
-    - misspell    # Find misspelled words
-    - cyclop      # Find cyclomatic complexity
-    - gocyclo     # Also find cyclomatic complexity
-    - bodyclose   # Check for HTTP body close errors
-    - nilerr      # Find bad nil/err handling
-    - nilnil      # Also find bad nil/err handling
+    - revive # Replacement for golint
+    - gofmt # Runs gofmt as part of the linter
+    - gosec # Find security issues
+    - whitespace # Whitespace end of lines
+    #- wsl # Whitespace linter
+    - stylecheck # A few Go style rules
+    - misspell # Find misspelled words
+    - cyclop # Find cyclomatic complexity
+    - gocyclo # Also find cyclomatic complexity
+    - bodyclose # Check for HTTP body close errors
+    - nilerr # Find bad nil/err handling
+    - nilnil # Also find bad nil/err handling
     - tagliatelle # Find badly named struct tags
     #- gomnd       # Find magic numbers, enable at your peril
 
@@ -31,8 +32,11 @@ linters-settings:
         json: goCamel
         yaml: goCamel
 
+  wsl:
+    allow-cuddle-declarations: true
+
   revive:
-    severity: error 
+    severity: error
     enable-all-rules: false
     confidence: 0.5
     rules:
@@ -43,4 +47,4 @@ linters-settings:
         severity: error
         arguments: [120]
       - name: var-naming
-        severity: error        
+        severity: error
