@@ -10,6 +10,10 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
+type server struct {
+	pb.UnimplementedWorkerServer
+}
+
 func (s *server) NewJob(ctx context.Context, in *pb.JobRequest) (*pb.JobResult, error) {
 	log.Printf("Received job: %d", in.GetId())
 

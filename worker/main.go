@@ -8,22 +8,24 @@ import (
 	"net"
 	"os"
 	"strconv"
+	"strings"
+	"time"
 
 	pb "nanoray/pkg/proto"
 
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 )
-
-type server struct {
-	pb.UnimplementedWorkerServer
-}
 
 var (
 	portFlag     = flag.String("port", "0", "The offset of the port to listen on")
 	portBaseFlag = flag.String("portBase", "4400", "The port number base to listen on")
 	port         int32
+	ctrlConn     *grpc.ClientConn
 	ctrlClient   pb.ControllerClient
+	workerInfo   pb.WorkerInfo
 )
 
 const controllerAddr = "localhost:5000"
@@ -44,37 +46,56 @@ func main() {
 	portNumInt, _ := strconv.Atoi(portNum)
 	portBaseInt, _ := strconv.Atoi(portBase)
 
-	// client setup
-	conn, err := grpc.Dial(controllerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Fatalf("did not connect: %v", err)
-	}
-	defer conn.Close()
-	ctrlClient = pb.NewControllerClient(conn)
-
 	// Final port number
 	port = int32(portBaseInt + portNumInt)
 
+	workerInfo = pb.WorkerInfo{
+		Id:      strings.Split(uuid.NewString(), "-")[0],
+		Address: "localhost",
+		Port:    port,
+	}
+
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Fatalf("Failed to bind to port\n%s", err.Error())
 	}
 
 	s := grpc.NewServer()
 	pb.RegisterWorkerServer(s, &server{})
 
-	res, err := ctrlClient.RegisterWorker(context.Background(), &pb.WorkerInfo{
-		Address: "localhost",
-		Port:    port,
-	})
+	waitForController()
+	defer ctrlConn.Close()
+
+	res, err := ctrlClient.RegisterWorker(context.Background(), &workerInfo)
 	if err != nil {
-		log.Fatalf("failed to register worker: %v", err)
+		log.Fatalf("Registration failed\n%s", err.Error())
 	}
 
-	log.Printf("Registered worker: %s", res.GetMessage())
+	log.Printf("Registered with controller: %s", res.GetMessage())
 
-	log.Printf("Server started on port %d", port)
+	log.Printf("Worker started on port %d", port)
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		log.Fatalf("Failed to serve\n%s", err.Error())
+	}
+}
+
+func waitForController() {
+	log.Printf("Connecting to controller at %s", controllerAddr)
+
+	for {
+		var err error
+		ctrlConn, err = grpc.Dial(controllerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			log.Fatalf("Unable to dial controller\n%s", err.Error())
+		}
+
+		ctrlClient = pb.NewControllerClient(ctrlConn)
+
+		ctrlConn.WaitForStateChange(context.Background(), ctrlConn.GetState())
+		if ctrlConn.GetState() == connectivity.Ready {
+			break
+		}
+
+		time.Sleep(1 * time.Second)
 	}
 }

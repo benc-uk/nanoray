@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
 option go_package = "nanoray/pkg/proto";
 
 service Worker {
@@ -8,8 +9,10 @@ service Worker {
 }
 
 service Controller {
-  rpc GetScene(SceneRequest) returns (SceneResult) {}
-  rpc RegisterWorker(WorkerInfo) returns (RegistrationResult) {}
+  rpc StartRender(google.protobuf.Empty) returns (google.protobuf.Empty);
+  rpc GetScene(SceneRequest) returns (SceneResult);
+  rpc RegisterWorker(WorkerInfo) returns (RegistrationResult);
+  rpc GetWorkers(google.protobuf.Empty) returns (WorkerList);
 }
 
 message JobRequest {
@@ -32,6 +35,10 @@ message WorkerInfo {
   string id = 1;
   string address = 2;
   int32  port = 3;
+}
+
+message WorkerList {
+  repeated WorkerInfo workers = 1;
 }
 
 message RegistrationResult {

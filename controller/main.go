@@ -13,10 +13,6 @@ import (
 	"google.golang.org/grpc"
 )
 
-type server struct {
-	pb.UnimplementedControllerServer
-}
-
 var (
 	portFlag = flag.String("port", "5000", "The port to listen on")
 )
@@ -32,16 +28,17 @@ func main() {
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		log.Fatalf("Failed to bind to port\n%s", err.Error())
 	}
 
-	workers = []WorkerConnection{}
+	workers = make(map[string]WorkerConnection)
 
 	s := grpc.NewServer()
+
 	pb.RegisterControllerServer(s, &server{})
 
-	log.Printf("Server started on port %d", port)
+	log.Printf("Controller started on port %d", port)
 	if err := s.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+		log.Fatalf("Failed to serve\n%s", err.Error())
 	}
 }
