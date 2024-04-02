@@ -1,0 +1,17 @@
+{{ define "view/scene" }}
+
+<li id="sceneNav" class="is-active" hx-swap-oob="true"><a hx-get="view/scene">Scene Editor</a></li>
+
+<button class="button is-primary mb-2" hx-get="api/render" hx-swap="none">RUN JOB</button>
+
+<textarea class="textarea is-info" rows="10">
+details:
+  name: Test Scene
+  width: 800
+  height: 600
+</textarea>
+
+
+<progress max="0" value="0" hx-get="api/render/progress" hx-trigger="load" hx-swap="outerHTML"></progress> 
+
+{{ end }}

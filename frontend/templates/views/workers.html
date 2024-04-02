@@ -1,0 +1,17 @@
+{{ define "view/workers" }}
+
+<li id="workersNav" class="is-active" hx-swap-oob="true"><a hx-get="view/workers">Workers</a></li>
+
+<table class="table">
+  <thead>
+    <tr id="workersTableHead">
+      <th class="is-success has-text-dark">Id</th>
+      <th class="is-success has-text-dark">Host</th>
+      <th class="is-success has-text-dark">Port</th>
+      <th class="is-success has-text-dark">Max Jobs</th>
+    </tr>
+  </thead>
+  <tbody hx-get="/api/workers" hx-trigger="load,every 2s" hx-swap="innerHTML"></tbody>
+</table>
+
+{{ end }}

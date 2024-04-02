@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"raynet/pkg/controller"
+	"raynet/shared/controller"
 )
 
 var portFlag = flag.String("port", "8000", "The port to listen on")
@@ -27,22 +27,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/", fs)
 
-	mux.HandleFunc("/api/workers", func(w http.ResponseWriter, r *http.Request) {
-
-		workers, err := controller.Client.GetWorkers(r.Context(), nil)
-		if err != nil {
-			log.Printf("Failed to get workers\n%s", err.Error())
-			http.Error(w, "Failed to get workers", http.StatusInternalServerError)
-			return
-		}
-
-		html := ""
-		for _, worker := range workers.Workers {
-			html += `<li>` + worker.Id + ` ` + worker.Host + `</li>`
-		}
-
-		_, _ = w.Write([]byte(html))
-	})
+	addAPIRoutes(mux, NewHTMLRenderer(mux))
 
 	err := controller.Connect(time.Second * 20)
 	if err != nil {

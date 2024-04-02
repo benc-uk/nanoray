@@ -1,0 +1,18 @@
+{{ define "api/workers" }} 
+
+{{ if not .GetWorkers }}
+  <tr>
+    <td colspan="3" class="has-text-warning">No workers are online</td>
+  </tr>
+{{ end }} 
+
+{{ range .GetWorkers }}
+  <tr>
+    <td>{{ .Id }}</td>
+    <td>{{ .Host }}</td>
+    <td>{{ .Port }}</td>
+    <td>{{ .MaxJobs }}</td>
+  </tr>
+{{ end }} 
+
+{{ end }}

@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 
-	pb "raynet/pkg/proto"
+	pb "raynet/shared/proto"
 )
 
 var Client pb.ControllerClient

@@ -36,18 +36,22 @@ lint-fix: ## 📝 Lint & format, attempts to fix errors & modify code
 
 run-controller: ## 🏃 Run controller service
 	@figlet $@ || true
+	@clear
 	cd controller && air
 
 run-frontend: ## 🏃 Run frontend service
 	@figlet $@ || true
+	@clear
 	cd frontend && air
 
 run-worker: ## 🏃 Run worker service
 	@figlet $@ || true
+	@clear
 	cd worker && air
 
-run-workers: ## 🏃 Run worker services
+run-workers: ## 🏃 Run multiple worker services
 	@figlet $@ || true
+	@clear
 	./run-workers.sh $(WORKERS)
 
 # image: check-vars ## 📦 Build container image from Dockerfile
@@ -66,13 +70,10 @@ run-workers: ## 🏃 Run worker services
 # 	#go build -o __CHANGE_ME__ $(SRC_DIR)/...
 # 	#cd $(SRC_DIR); npm run build
 
-# run: ## 🏃 Run application, used for local development
-# 	@figlet $@ || true
-# 	#$(AIR_PATH) -c .air.toml
-
 clean: ## 🧹 Clean up, remove dev data and files
 	@figlet $@ || true
 	@rm -rf pkg/proto/*.pb.go
+	@find . -type d -name tmp -exec rm -r "{}" \;
 
 proto: ## 🚀 Generate protobuf files
 	@figlet $@ || true

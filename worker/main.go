@@ -8,64 +8,55 @@ import (
 	"log"
 	"net"
 	"os"
+	"runtime"
 	"strconv"
 	"time"
 
-	"raynet/pkg/controller"
-	pb "raynet/pkg/proto"
+	"raynet/shared/controller"
+	pb "raynet/shared/proto"
 
 	"google.golang.org/grpc"
 )
 
 var (
-	portFlag     = flag.String("port", "0", "The offset of the port to listen on")
-	portBaseFlag = flag.String("portBase", "4400", "The port number base to listen on")
+	portFlag     = flag.Int("port", 4400, "The port worker will listen on")
 	hostnameFlag = flag.String("hostname", "", "Override the hostname to use for the worker")
+	maxJobsFlag  = flag.Int("maxjobs", runtime.NumCPU(), "The maximum number of jobs to run concurrently")
 	workerInfo   pb.WorkerInfo
 )
 
 func main() {
-	// Lots of guff for port handling, env vars and flags
-	// We do things a little differently using an offset, easier to run multiple workers on the same machine
-	portNum := os.Getenv("PORT")
-	portBase := os.Getenv("PORT_BASE")
-	hostnameEnv := os.Getenv("HOSTNAME")
-
 	flag.Parse()
 
-	if portNum == "" {
-		portNum = *portFlag
+	var port int
+	if os.Getenv("PORT") == "" {
+		port = *portFlag
+	} else {
+		port, _ = strconv.Atoi(os.Getenv("PORT"))
 	}
 
-	if portBase == "" {
-		portBase = *portBaseFlag
+	var maxJobs int
+	if os.Getenv("MAX_JOBS") == "" {
+		maxJobs = *maxJobsFlag
+	} else {
+		maxJobs, _ = strconv.Atoi(os.Getenv("MAX_JOBS"))
 	}
 
-	portNumInt, _ := strconv.Atoi(portNum)
-	portBaseInt, _ := strconv.Atoi(portBase)
-
-	// Final port number
-	port := int(portBaseInt + portNumInt)
-
-	hostname := "localhost"
-	if hostnameEnv != "" {
-		hostname = hostnameEnv
+	hostname, _ := os.Hostname()
+	if os.Getenv("HOSTNAME") != "" {
+		hostname = os.Getenv("HOSTNAME")
 	} else if *hostnameFlag != "" {
 		hostname = *hostnameFlag
-	} else {
-
-		var err error
-		hostname, err = os.Hostname()
-		if err != nil {
-			hostname = "localhost"
-		}
 	}
 
 	workerInfo = pb.WorkerInfo{
-		Id:   generateID(fmt.Sprintf("%s:%d", hostname, port), 8),
-		Host: hostname,
-		Port: int32(port),
+		Id:      generateID(fmt.Sprintf("%s:%d", hostname, port), 8),
+		Host:    hostname,
+		Port:    int32(port),
+		MaxJobs: int32(maxJobs),
 	}
+
+	log.Printf("Starting worker, will handle max jobs: %d", maxJobs)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
@@ -82,8 +73,7 @@ func main() {
 
 	log.Printf("Worker started on port %d", port)
 
-	// Serve the gRPC server but continue to register with the controller
-	// Use a channel to block until the server is done
+	// Start gRPC server in a goroutine, use a channel to block until it's done
 	ch := make(chan struct{})
 	go func() {
 		err = s.Serve(lis)

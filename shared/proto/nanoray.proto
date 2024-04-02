@@ -1,24 +1,27 @@
 syntax = "proto3";
 
 import "google/protobuf/duration.proto";
-import "google/protobuf/empty.proto";
 option go_package = "raynet/pkg/proto";
 
 service Worker {
-  rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty);
-  rpc NewJob(JobRequest) returns (JobResult) {}
+  rpc Ping(Void) returns (Void);
+  rpc NewJob(JobRequest) returns (Void);
 }
 
 service Controller {
-  rpc StartRender(google.protobuf.Empty) returns (google.protobuf.Empty);
   rpc GetScene(SceneRequest) returns (SceneResult);
-  rpc RegisterWorker(WorkerInfo) returns (google.protobuf.Empty);
-  rpc GetWorkers(google.protobuf.Empty) returns (WorkerList);
+  rpc RegisterWorker(WorkerInfo) returns (Void);
+  rpc JobComplete(JobResult) returns (Void);
+
+  // Used by frontend 
+  rpc GetWorkers(Void) returns (WorkerList);
+  rpc StartRender(Void) returns (Void);
+  rpc GetProgress(Void) returns (Progress);
 }
 
 message JobRequest {
-  string sceneSHA = 1;
-  int32  id = 2;
+  int32 id = 2;
+  string sceneId = 1;
   int32  x = 3;
   int32  y = 4;
   int32  width = 5;
@@ -26,16 +29,18 @@ message JobRequest {
 }
 
 message JobResult {
-  StatusCode statusCode = 1;
-  string message = 2;
   bytes imageData = 3;
   google.protobuf.Duration timeTaken = 4;
+  WorkerInfo worker = 5;
+  JobRequest job = 6;
 }
 
 message WorkerInfo {
   string id = 1;
   string host = 2;
   int32  port = 3;
+  int32  index = 4;
+  int32  maxJobs = 5;
 }
 
 message WorkerList {
@@ -48,7 +53,9 @@ message SceneRequest {
 message SceneResult {
 }
 
-enum StatusCode {
-  OK = 0;
-  ERROR = 1;
+message Void {}
+
+message Progress {
+  int32 totalJobs = 1;
+  int32 completedJobs = 2;
 }

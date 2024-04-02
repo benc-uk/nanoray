@@ -8,7 +8,7 @@ import (
 	"os"
 	"strconv"
 
-	pb "raynet/pkg/proto"
+	pb "raynet/shared/proto"
 
 	"google.golang.org/grpc"
 )
@@ -31,12 +31,12 @@ func main() {
 		log.Fatalf("Failed to bind to port\n%s", err.Error())
 	}
 
-	s := grpc.NewServer()
+	grpcSrv := grpc.NewServer()
 
-	pb.RegisterControllerServer(s, &server{})
+	pb.RegisterControllerServer(grpcSrv, &server{})
 
 	log.Printf("Controller started on port %d", port)
-	if err := s.Serve(lis); err != nil {
+	if err := grpcSrv.Serve(lis); err != nil {
 		log.Fatalf("Failed to serve\n%s", err.Error())
 	}
 }

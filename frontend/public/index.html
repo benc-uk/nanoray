@@ -3,20 +3,48 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ClusterRay: Distributed Raytracer</title>
-    <script
-      src="https://unpkg.com/htmx.org@1.9.11"
-      integrity="sha384-0gxUXCCR8yv9FM2b+U3FDbsKthCI66oH5IA9fHppQq9DDMHuMauqq1ZHBpJxQ0J0"
-      crossorigin="anonymous"
-    ></script>
+    <link rel="shortcut icon" href="favicon.png" type="image/png" />
+    <title>RayNet: Distributed Raytracer</title>
+    <script src="https://unpkg.com/htmx.org@1.9.11"></script>
+
+    <script>
+      const $ = document.querySelector.bind(document)
+      const $$ = document.querySelectorAll.bind(document)
+
+      htmx.on('htmx:responseError', (e) => {
+        $('#error').style.display = 'block'
+        $('#error .message-body').textContent = e.detail.xhr.responseText
+      })
+
+      htmx.on('htmx:beforeSend', (e) => {
+        $('#error').style.display = 'none'
+      })
+    </script>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css" />
+    <link rel="stylesheet" href="style.css">
   </head>
   <body>
     <section class="section">
-      <h1 class="title">Nanoray Frontend</h1>
-      <h2 class="subtitle">Workers</h2>
-      <ul hx-get="/api/workers" hx-trigger="load,every 2s" hx-swap="innerHTML"></ul>
+      <article class="message is-danger" id="error" style="display: none">
+        <div class="message-header">
+          <p>Error</p>
+        </div>
+        <div class="message-body"></div>
+      </article>
+
+      <h1 class="title">RayNet: Distributed Raytracer</h1>
+
+      <div class="tabs">
+        <ul hx-target="#main" hx-on:click="$$('li').forEach(e => e.classList.remove('is-active'))">
+          <li id="sceneNav"><a hx-get="view/scene">Scene Editor</a></li>
+          <li id="rendersNav"><a hx-get="view/renders">Renders</a></li>
+          <li id="workersNav"><a hx-get="view/workers">Workers</a></li>
+          <li id="adminNav"><a hx-get="view/admin">Admin</a></li>
+        </ul>
+      </div>
+
+      <div class="container" id="main" hx-get="view/scene" hx-trigger="load"></div>
     </section>
   </body>
 </html>
