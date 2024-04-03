@@ -1,5 +1,8 @@
 {
   "[html]": {
     "editor.formatOnSave": false
+  },
+  "gopls": {
+    "analyses": { "composites": false }
   }
 }

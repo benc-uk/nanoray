@@ -8,8 +8,8 @@ import (
 	"math/rand/v2"
 	"time"
 
-	"raynet/shared/controller"
-	pb "raynet/shared/proto"
+	"nanoray/shared/controller"
+	pb "nanoray/shared/proto"
 
 	"google.golang.org/protobuf/types/known/durationpb"
 )

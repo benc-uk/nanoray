@@ -12,14 +12,14 @@ import (
 	"strconv"
 	"time"
 
-	"raynet/shared/controller"
-	pb "raynet/shared/proto"
+	"nanoray/shared/controller"
+	pb "nanoray/shared/proto"
 
 	"google.golang.org/grpc"
 )
 
 var (
-	portFlag     = flag.Int("port", 4400, "The port worker will listen on")
+	portFlag     = flag.Int("port", 4000, "The port worker will listen on")
 	hostnameFlag = flag.String("hostname", "", "Override the hostname to use for the worker")
 	maxJobsFlag  = flag.Int("maxjobs", runtime.NumCPU(), "The maximum number of jobs to run concurrently")
 	workerInfo   pb.WorkerInfo

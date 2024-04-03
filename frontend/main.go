@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"raynet/shared/controller"
+	"nanoray/shared/controller"
 )
 
 var portFlag = flag.String("port", "8000", "The port to listen on")

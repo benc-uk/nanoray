@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="shortcut icon" href="favicon.png" type="image/png" />
-    <title>RayNet: Distributed Raytracer</title>
+    <title>NanoRay: Distributed Raytracer</title>
     <script src="https://unpkg.com/htmx.org@1.9.11"></script>
 
     <script>
@@ -16,9 +16,9 @@
         $('#error .message-body').textContent = e.detail.xhr.responseText
       })
 
-      htmx.on('htmx:beforeSend', (e) => {
+      clearError = () => {
         $('#error').style.display = 'none'
-      })
+      }
     </script>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css" />
@@ -33,10 +33,10 @@
         <div class="message-body"></div>
       </article>
 
-      <h1 class="title">RayNet: Distributed Raytracer</h1>
+      <h1 class="title">NanoRay: Distributed Raytracer</h1>
 
       <div class="tabs">
-        <ul hx-target="#main" hx-on:click="$$('li').forEach(e => e.classList.remove('is-active'))">
+        <ul hx-target="#main" hx-on:click="$$('li').forEach(e => e.classList.remove('is-active')); clearError()">
           <li id="sceneNav"><a hx-get="view/scene">Scene Editor</a></li>
           <li id="rendersNav"><a hx-get="view/renders">Renders</a></li>
           <li id="workersNav"><a hx-get="view/workers">Workers</a></li>
@@ -44,7 +44,7 @@
         </ul>
       </div>
 
-      <div class="container" id="main" hx-get="view/scene" hx-trigger="load"></div>
+      <div class="none" id="main" hx-get="view/scene" hx-trigger="load"></div>
     </section>
   </body>
 </html>

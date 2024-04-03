@@ -8,23 +8,24 @@ import (
 	"os"
 	"strconv"
 
-	pb "raynet/shared/proto"
+	pb "nanoray/shared/proto"
 
 	"google.golang.org/grpc"
 )
 
 var (
-	portFlag = flag.String("port", "5000", "The port to listen on")
+	portFlag = flag.Int("port", 5000, "The port the controller will listen on")
 )
 
 func main() {
-	portNum := os.Getenv("PORT")
 	flag.Parse()
 
-	if portNum == "" {
-		portNum = *portFlag
+	var port int
+	if os.Getenv("PORT") == "" {
+		port = *portFlag
+	} else {
+		port, _ = strconv.Atoi(os.Getenv("PORT"))
 	}
-	port, _ := strconv.Atoi(portNum)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {

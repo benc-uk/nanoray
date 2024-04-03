@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
+	"nanoray/shared/controller"
 	"net/http"
-	"raynet/shared/controller"
 )
 
 func addAPIRoutes(mux *http.ServeMux, templates *HTMLRenderer) {

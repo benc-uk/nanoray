@@ -9,8 +9,8 @@ if [ -z "$COUNT" ]; then
 fi
 
 for i in $(seq 0 $((COUNT-1))); do
-  export PORT=$i
-  go run raynet/worker &
+  export PORT=$((4000+i))
+  go run nanoray/worker &
   sleep 0.2
 done
 
