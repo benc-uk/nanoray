@@ -9,6 +9,7 @@ type Object struct {
 	Id       string
 	Position t.Vec3
 	Material Material
+	Colour   t.RGB
 }
 
 type Sphere struct {
@@ -44,10 +45,12 @@ func (s Sphere) Hit(r Ray, interval Interval) (bool, Hit) {
 
 	t1 := (-b - sqrtDisc) / a
 	t2 := (-b + sqrtDisc) / a
+	t := t1
+	if t1 < interval.Min {
+		t = t2
+	}
 
-	if t1 > interval.Min && t1 < interval.Max || t2 > interval.Min && t2 < interval.Max {
-		t := math.Min(t1, t2)
-
+	if t > interval.Min && t < interval.Max {
 		hit := Hit{
 			T:      t,
 			P:      r.GetPoint(t),

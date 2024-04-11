@@ -2,20 +2,41 @@ package main
 
 import (
 	"context"
-	"image"
-	"image/color"
 	"log"
-	"math/rand/v2"
-	"time"
 
 	"nanoray/shared/controller"
 	pb "nanoray/shared/proto"
-
-	"google.golang.org/protobuf/types/known/durationpb"
+	"nanoray/shared/raytrace"
+	t "nanoray/shared/tuples"
 )
 
 type server struct {
 	pb.UnimplementedWorkerServer
+}
+
+var s raytrace.Scene
+var c raytrace.Camera
+
+func init() {
+	s = raytrace.Scene{}
+	s.MaxDepth = 5
+	sphere := raytrace.NewSphere(t.Vec3{-120, 0, -80}, 50)
+	sphere.Colour = t.RGB{1, 0, 0}
+	s.AddObject(sphere)
+
+	big := raytrace.NewSphere(t.Vec3{0, -9050, -120}, 9000)
+	big.Colour = t.RGB{1, 1, 1}
+	s.AddObject(big)
+
+	sphere3 := raytrace.NewSphere(t.Vec3{0, 0, -100}, 50)
+	sphere3.Colour = t.RGB{1, 1, 0}
+	s.AddObject(sphere3)
+
+	sphere4 := raytrace.NewSphere(t.Vec3{120, 0, -80}, 50)
+	sphere4.Colour = t.RGB{0, 0.9, 0}
+	s.AddObject(sphere4)
+
+	c = raytrace.NewCamera(t.Vec3{0, -5, 170}, t.Zero(), 60)
 }
 
 func (s *server) NewJob(ctx context.Context, job *pb.JobRequest) (*pb.Void, error) {
@@ -31,39 +52,14 @@ func (s *server) Ping(ctx context.Context, in *pb.Void) (*pb.Void, error) {
 }
 
 func runJob(job *pb.JobRequest) error {
-	now := time.Now()
+	// Get the scene from the server NOT USED YET
+	// scene, err := controller.Client.GetScene(context.Background(), &pb.SceneRequest{Id: job.SceneId})
+	// log.Printf("Got scene: %s", scene.Data)
 
-	// Simulate some work calculate prime numbers
-	for i := 2; i < int(10000); i++ {
-		for j := 2; j < i; j++ {
-			if i%j == 0 {
-				break
-			}
-		}
-	}
+	// 🔥🔥🔥 TEMP SCENE
 
-	imgW := int(job.Width)
-	imgH := int(job.Height)
-
-	upLeft := image.Point{0, 0}
-	lowRight := image.Point{imgW, imgH}
-	img := image.NewRGBA(image.Rectangle{upLeft, lowRight})
-
-	val := uint8(rand.IntN(128)) + 128
-	randColour := color.RGBA{val, 0, 0, 255}
-
-	for y := 0; y < imgH; y++ {
-		for x := 0; x < imgW; x++ {
-			img.Set(x, y, randColour)
-		}
-	}
-
-	res := &pb.JobResult{
-		TimeTaken: durationpb.New(time.Since(now)),
-		ImageData: img.Pix,
-		Worker:    &workerInfo,
-		Job:       job,
-	}
+	res := raytrace.RenderJob(job, s, c)
+	res.Worker = &workerInfo
 
 	_, err := controller.Client.JobComplete(context.Background(), res)
 	if err != nil {

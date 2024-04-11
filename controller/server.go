@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"time"
 
 	pb "nanoray/shared/proto"
 	"nanoray/shared/raytrace"
@@ -21,6 +22,7 @@ type server struct {
 }
 
 var netRender *raytrace.NetworkRender
+var img *image.RGBA
 
 var jobIdCounter int32 = 0
 
@@ -37,35 +39,41 @@ func (s *server) StartRender(ctx context.Context, in *pb.Void) (*pb.Void, error)
 	}
 
 	// Create a new render object
+	//render := raytrace.NewRender(800, 16/9)
 	netRender = &raytrace.NetworkRender{
-		Render: raytrace.Render{
-			Image:  nil,
-			Width:  1920,
-			Height: 1080,
-		},
-
 		Status:       raytrace.READY,
 		JobQueue:     sync.Map{},
 		JobsTotal:    0,
 		JobsComplete: 0,
+		Start:        time.Now(),
 	}
 
-	imgW := 1920
-	imgH := 1080
-	jobW := 32
-	jobH := 32
-	netRender.Image = image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{imgW, imgH}})
+	totalJobs := 60
+	imgAspect := 4.0 / 3.0
+	imgW := 1800
+	imgH := int(float64(imgW) / imgAspect)
+	jobW := imgW
+	jobH := imgH / totalJobs
+
+	img = image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{imgW, imgH}})
 
 	jobCount := 0
 	for y := 0; y < imgH; y += jobH {
 		for x := 0; x < imgW; x += jobW {
 			netRender.JobQueue.Store(jobIdCounter, &pb.JobRequest{
-				Id:      jobIdCounter,
-				SceneId: "test",
-				Width:   int32(jobW),
-				Height:  int32(jobH),
-				X:       int32(x),
-				Y:       int32(y),
+				Id:              jobIdCounter,
+				SceneId:         "test",
+				Width:           int32(jobW),
+				Height:          int32(jobH),
+				X:               int32(x),
+				Y:               int32(y),
+				SamplesPerPixel: int32(30),
+				ChunkSize:       int32(1),
+				ImageDetails: &pb.ImageDetails{
+					Width:       int32(imgW),
+					Height:      int32(imgH),
+					AspectRatio: imgAspect,
+				},
 			})
 
 			jobIdCounter++
@@ -115,13 +123,14 @@ func (s *server) JobComplete(ctx context.Context, result *pb.JobResult) (*pb.Voi
 	srcImg.Pix = result.ImageData
 
 	// Update the render image with the job result
-	draw.Draw(netRender.Image, image.Rect(int(job.X), int(job.Y), int(job.X+job.Width), int(job.Y+job.Height)), srcImg, image.Point{0, 0}, draw.Src)
+	draw.Draw(img, image.Rect(int(job.X), int(job.Y), int(job.X+job.Width), int(job.Y+job.Height)), srcImg, image.Point{0, 0}, draw.Src)
 
 	netRender.JobsComplete++
 
-	//log.Printf("Job %d complete, %d jobs remaining", job.Id, jobsToComplete)
+	log.Printf("Job %d complete, %d jobs remaining", job.Id, netRender.JobsTotal-netRender.JobsComplete)
 
 	if netRender.JobsComplete == netRender.JobsTotal {
+		log.Printf("Time to complete: %s", time.Since(netRender.Start))
 		log.Printf("All jobs completed, saving file!!!")
 
 		f, err := os.Create("render.png")
@@ -131,7 +140,7 @@ func (s *server) JobComplete(ctx context.Context, result *pb.JobResult) (*pb.Voi
 		}
 		defer f.Close()
 
-		err = png.Encode(f, netRender.Image)
+		err = png.Encode(f, img)
 		if err != nil {
 			log.Printf("Failed to encode render image\n%s", err.Error())
 			return nil, err
@@ -146,7 +155,7 @@ func (s *server) JobComplete(ctx context.Context, result *pb.JobResult) (*pb.Voi
 		})
 
 		if nextJob != nil {
-			//log.Printf("Dispatching job: %d to worker %s", nextJob.Id, result.Worker.Id)
+			log.Printf("Dispatching job: %d to worker %s", nextJob.Id, result.Worker.Id)
 			workerConn, _ := workers.Load(result.Worker.Id)
 			worker := workerConn.(WorkerConnection)
 

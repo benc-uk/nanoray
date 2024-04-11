@@ -5,14 +5,13 @@ import "image"
 type Scene struct {
 	Id            string
 	Objects       []Hitable
-	Lights        []Light
 	ImageTextures []*image.RGBA
+	MaxDepth      int
 }
 
 func NewScene() *Scene {
 	return &Scene{
 		Objects:       []Hitable{},
-		Lights:        []Light{},
 		ImageTextures: []*image.RGBA{},
 	}
 }

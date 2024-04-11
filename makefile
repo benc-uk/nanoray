@@ -15,7 +15,7 @@ AIR_PATH := $(REPO_ROOT)/.tools/air                           # Remove if not us
 .PHONY: help image push build run lint lint-fix
 .DEFAULT_GOAL := help
 
-WORKERS ?= 3
+WORKER_COUNT ?= 3
 
 help: ## 💬 This help message :)
 	@figlet $@ || true
@@ -34,12 +34,12 @@ lint-fix: ## 📝 Lint & format, attempts to fix errors & modify code
 	@figlet $@ || true
 	$(GOLINT_PATH) run --fix worker/ controller/ frontend/
 
-run-controller: ## 🏃 Run controller service
+run-controller: ## 🧠 Run controller service
 	@figlet $@ || true
 	@clear
 	cd controller && air
 
-run-frontend: ## 🏃 Run frontend service
+run-frontend: ## 🌐 Run frontend service
 	@figlet $@ || true
 	@clear
 	cd frontend && air
@@ -52,36 +52,26 @@ run-worker: ## 🏃 Run worker service
 run-workers: ## 🏃 Run multiple worker services
 	@figlet $@ || true
 	@clear
-	./run-workers.sh $(WORKERS)
+	./run-workers.sh $(WORKER_COUNT)
 
-# image: check-vars ## 📦 Build container image from Dockerfile
-# 	@figlet $@ || true
-# 	docker build --file ./build/Dockerfile \
-# 	--build-arg BUILD_INFO="$(BUILD_INFO)" \
-# 	--build-arg VERSION="$(VERSION)" \
-# 	--tag $(IMAGE_PREFIX):$(IMAGE_TAG) . 
+run-local: ## 💫 Run the standalone Nanoray CLI
+	@figlet $@ || true
+	@clear
+	go run nanoray/nanoray output/test.png
 
-# push: check-vars ## 📤 Push container image to registry
-# 	@figlet $@ || true
-# 	docker push $(IMAGE_PREFIX):$(IMAGE_TAG)
-
-# build: ## 🔨 Run a local build without a container
-# 	@figlet $@ || true
-# 	#go build -o __CHANGE_ME__ $(SRC_DIR)/...
-# 	#cd $(SRC_DIR); npm run build
-
-clean: ## 🧹 Clean up, remove dev data and files
+clean: ## 🧹 Clean up, remove dev data and temp files
 	@figlet $@ || true
 	@rm -rf pkg/proto/*.pb.go
 	@find . -type d -name tmp -exec rm -r "{}" \;
+	@find . -name *.png -exec rm -r "{}" \;
 
 proto: ## 🚀 Generate protobuf files
 	@figlet $@ || true
 	@protoc > /dev/null 2>&1 || (echo "💥 Error! protoc is not installed!"; exit 1)
 	@protoc-gen-go --help > /dev/null 2>&1 || (echo "💥 Error! protoc-gen-go is not installed!"; exit 1)
-	@protoc --go_out=pkg/proto --go-grpc_out=pkg/proto \
-	  --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative --proto_path=pkg/proto \
-	  pkg/proto/*.proto
+	@protoc --go_out=shared/proto --go-grpc_out=shared/proto \
+	  --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative --proto_path=shared/proto \
+	  shared/proto/*.proto
 
 # check-vars:
 # 	@if [[ -z "${IMAGE_REG}" ]]; then echo "💥 Error! Required variable IMAGE_REG is not set!"; exit 1; fi

@@ -3,6 +3,7 @@ package tuples
 import (
 	"fmt"
 	"math"
+	"math/rand/v2"
 )
 
 type Vec3 struct {
@@ -15,6 +16,10 @@ func Zero() Vec3 {
 
 func (v Vec3) Length() float64 {
 	return math.Sqrt(v.X*v.X + v.Y*v.Y + v.Z*v.Z)
+}
+
+func (v Vec3) SquaredLength() float64 {
+	return v.X*v.X + v.Y*v.Y + v.Z*v.Z
 }
 
 func (v *Vec3) Add(v2 Vec3) {
@@ -90,6 +95,47 @@ func (v Vec3) Sqrt() Vec3 {
 	return Vec3{math.Sqrt(v.X), math.Sqrt(v.Y), math.Sqrt(v.Z)}
 }
 
+func (v *Vec3) Negate() Vec3 {
+	return Vec3{-v.X, -v.Y, -v.Z}
+}
+
 func (v Vec3) String() string {
 	return fmt.Sprintf("[%f, %f, %f]", v.X, v.Y, v.Z)
+}
+
+// ============================================================
+// Random Vec3 functions for path tracing
+// ============================================================
+
+func RandVecCube() Vec3 {
+	return Vec3{
+		rand.Float64()*2 - 1,
+		rand.Float64()*2 - 1,
+		rand.Float64()*2 - 1,
+	}
+}
+
+func RandVecSphere(normalize bool) Vec3 {
+	var v Vec3
+	for {
+		v = RandVecCube()
+		if v.SquaredLength() < 1 {
+			break
+		}
+	}
+
+	if normalize {
+		v.Normalize()
+	}
+
+	return v
+}
+
+func RandVecSphereHemisphere(normal Vec3) Vec3 {
+	v := RandVecSphere(true)
+	if v.Dot(normal) > 0 {
+		return v
+	} else {
+		return v.Negate()
+	}
 }

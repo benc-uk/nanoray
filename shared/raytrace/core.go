@@ -6,12 +6,25 @@ import (
 	"strconv"
 )
 
+// ============================================================
+// Rays
+// ============================================================
+
 type Ray struct {
 	Origin    v.Vec3
 	Direction v.Vec3
 }
 
-func (r Ray) Shade(s Scene) v.RGB {
+func NewRay(origin, direction v.Vec3) Ray {
+	Stat.Rays++
+	return Ray{origin, direction}
+}
+
+func (r Ray) Shade(s Scene, depth int) v.RGB {
+	if depth > s.MaxDepth {
+		return v.Black()
+	}
+
 	interval := Interval{0.001, math.MaxFloat64}
 	var hit *Hit = nil
 
@@ -25,12 +38,21 @@ func (r Ray) Shade(s Scene) v.RGB {
 
 	if hit != nil {
 		normal := hit.Normal
-		objColor := v.RGB{normal.X + 1, normal.Y + 1, normal.Z + 1}.MultScalarNew(0.5)
-		return objColor
+		randDir := normal.AddNew(v.RandVecSphere(true))
+		randRay := NewRay(hit.P, randDir)
+
+		bounceColour := randRay.Shade(s, depth+1)
+
+		// Only return 50% of the object colour
+		objColour := v.White().Blend(hit.O.Colour, 0.7)
+		bounceColour.Mult(objColour)
+
+		return bounceColour
 	}
 
-	t := 0.5 * (-r.Direction.Y + 1.0)
-	out := v.White().Blend(v.RGB{0.2, 0.4, 1.0}, t)
+	// Miss, so pixel is background, a blueish gradient
+	t := 0.6 * (-r.Direction.Y + 1.0)
+	out := v.White().Blend(v.RGB{0.1, 0.1, 0.5}, t)
 	return out
 }
 
@@ -40,6 +62,8 @@ func (r Ray) GetPoint(t float64) v.Vec3 {
 	return p
 }
 
+// ============================================================
+// Object hits
 // ============================================================
 
 type Hit struct {
@@ -57,6 +81,8 @@ func (h Hit) String() string {
 	return "Hit{" + h.P.String() + ", " + h.Normal.String() + "}"
 }
 
+// ============================================================
+// Simple interval between two numbers
 // ============================================================
 
 type Interval struct {
@@ -82,6 +108,8 @@ func (i Interval) String() string {
 	return "Interval{" + minStr + ", " + maxStr + "}"
 }
 
+// ============================================================
+// Materials (placeholder for now)
 // ============================================================
 
 type DiffuseMaterial struct {

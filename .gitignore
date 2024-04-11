@@ -3,3 +3,5 @@ node_modules/
 tmp/
 pkg/proto/*.go
 .tools/
+output/
+**/*.png

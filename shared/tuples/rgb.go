@@ -35,11 +35,23 @@ func White() RGB {
 	return RGB{1, 1, 1}
 }
 
-func (c RGB) Add(c2 RGB) RGB {
+func (c *RGB) Add(c2 RGB) {
+	c.R += c2.R
+	c.G += c2.G
+	c.B += c2.B
+}
+
+func (c *RGB) AddSome(c2 RGB, t float64) {
+	c.R += c2.R * t
+	c.G += c2.G * t
+	c.B += c2.B * t
+}
+
+func (c RGB) AddNew(c2 RGB) RGB {
 	return RGB{c.R + c2.R, c.G + c2.G, c.B + c2.B}
 }
 
-func (c RGB) Sub(c2 RGB) RGB {
+func (c RGB) SubNew(c2 RGB) RGB {
 	return RGB{c.R - c2.R, c.G - c2.G, c.B - c2.B}
 }
 
@@ -59,6 +71,16 @@ func (c *RGB) MultScalar(s float64) {
 
 func (c RGB) MultScalarNew(s float64) RGB {
 	return RGB{c.R * s, c.G * s, c.B * s}
+}
+
+func (c *RGB) Mult(c2 RGB) {
+	c.R *= c2.R
+	c.G *= c2.G
+	c.B *= c2.B
+}
+
+func (c RGB) MultNew(c2 RGB) RGB {
+	return RGB{c.R * c2.R, c.G * c2.G, c.B * c2.B}
 }
 
 func (c RGB) ToRGBA() color.RGBA {
