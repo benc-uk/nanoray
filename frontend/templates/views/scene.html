@@ -2,15 +2,58 @@
 
 <li id="sceneNav" class="is-active" hx-swap-oob="true"><a hx-get="view/scene">Scene Editor</a></li>
 
-<button class="button is-primary mb-2" hx-get="api/render" hx-swap="none" hx-on:click="clearError()">RUN JOB</button>
+<form>
+  <div class="is-flex">
+    <div class="field pr-4">
+      <label class="label">Width</label>
+      <div class="select">
+        <select name="width">
+          <option>640</option>
+          <option selected>800</option>
+          <option>1024</option>
+          <option>1280</option>
+          <option>1600</option>
+          <option>1920</option>
+          <option>2560</option>
+          <option>3440</option>
+        </select>
+      </div>
+    </div>
 
-<textarea class="textarea is-info" rows="10">
-details:
-  name: Test Scene
-  width: 800
-  height: 600
+    <div class="field pr-4">
+      <label class="label">Aspect Ratio</label>
+      <div class="select">
+        <select name="aspect">
+          <option value="1">1:1</option>
+          <option value="1.33333">4:3</option>
+          <option selected value="1.77777">16:9</option>
+          <option value="1.6">16:10</option>
+          <option value="2.33333">21:9</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field pr-4">
+      <label class="label">Samples</label>
+      <div class="input" name="samples">
+        <input name="samples" type="range" min="1" max="200" value="20"/>
+      </div>
+    </div>
+
+    <button class="button is-primary mb-2" hx-post="api/render" hx-swap="none" hx-on:click="clearError()">Start Render</button>
+  </div>
+
+  <textarea class="textarea is-info" rows="10" name="sceneData" style="font-family: 'Cascadia Code', Consolas, monospace">
+name: Test Scene
+camera:
+  position: [0, 0, 0]
+objects:
+  - type: sphere
+    position: [0, 0, -150]
+    radius: 51
+    colour: [1, 0, 0.6]
 </textarea>
-
+</form>
 
 <progress max="0" value="0" hx-get="api/render/progress" hx-trigger="load" hx-swap="outerHTML"></progress> 
 

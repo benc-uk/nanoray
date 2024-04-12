@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
-	pb "nanoray/shared/proto"
+	pb "nanoray/lib/proto"
 	"sort"
 	"sync"
 

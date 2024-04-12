@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"time"
 
-	"nanoray/shared/controller"
-	pb "nanoray/shared/proto"
+	"nanoray/lib/controller"
+	pb "nanoray/lib/proto"
 
 	"google.golang.org/grpc"
 )

@@ -8,14 +8,12 @@ export
 # Internal variables you don't want to change
 REPO_ROOT := $(shell git rev-parse --show-toplevel)
 SHELL := /bin/bash
-GOLINT_PATH := $(REPO_ROOT)/.tools/golangci-lint              # Remove if not using Go
-AIR_PATH := $(REPO_ROOT)/.tools/air                           # Remove if not using Go
+GOLINT_PATH := $(REPO_ROOT)/.tools/golangci-lint
+AIR_PATH := $(REPO_ROOT)/.tools/air
 
 .EXPORT_ALL_VARIABLES:
 .PHONY: help image push build run lint lint-fix
 .DEFAULT_GOAL := help
-
-WORKER_COUNT ?= 3
 
 help: ## 💬 This help message :)
 	@figlet $@ || true
@@ -49,29 +47,23 @@ run-worker: ## 🏃 Run worker service
 	@clear
 	cd worker && air
 
-run-workers: ## 🏃 Run multiple worker services
-	@figlet $@ || true
-	@clear
-	./run-workers.sh $(WORKER_COUNT)
-
-run-local: ## 💫 Run the standalone Nanoray CLI
+run: ## 💫 Run the standalone Nanoray CLI
 	@figlet $@ || true
 	@clear
 	go run nanoray/nanoray output/test.png
 
 clean: ## 🧹 Clean up, remove dev data and temp files
 	@figlet $@ || true
-	@rm -rf pkg/proto/*.pb.go
-	@find . -type d -name tmp -exec rm -r "{}" \;
-	@find . -name *.png -exec rm -r "{}" \;
+	@rm -rf lib/proto/*.pb.go || true
+	@find . -type d -name tmp -exec rm -r "{}" \; || true
 
 proto: ## 🚀 Generate protobuf files
 	@figlet $@ || true
 	@protoc > /dev/null 2>&1 || (echo "💥 Error! protoc is not installed!"; exit 1)
 	@protoc-gen-go --help > /dev/null 2>&1 || (echo "💥 Error! protoc-gen-go is not installed!"; exit 1)
-	@protoc --go_out=shared/proto --go-grpc_out=shared/proto \
-	  --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative --proto_path=shared/proto \
-	  shared/proto/*.proto
+	@protoc --go_out=lib/proto --go-grpc_out=lib/proto \
+	  --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative --proto_path=lib/proto \
+	  lib/proto/*.proto
 
 # check-vars:
 # 	@if [[ -z "${IMAGE_REG}" ]]; then echo "💥 Error! Required variable IMAGE_REG is not set!"; exit 1; fi

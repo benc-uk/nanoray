@@ -1,7 +1,6 @@
 target/
 node_modules/
 tmp/
-pkg/proto/*.go
+lib/proto/*.go
 .tools/
-output/
-**/*.png
+**/output/*.png

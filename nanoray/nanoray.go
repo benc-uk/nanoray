@@ -1,62 +1,74 @@
 package main
 
 import (
+	"flag"
 	"image"
 	"image/draw"
 	"image/png"
 	"log"
-	"nanoray/shared/proto"
-	"nanoray/shared/raytrace"
-	t "nanoray/shared/tuples"
+	"nanoray/lib/proto"
+	rt "nanoray/lib/raytrace"
+	t "nanoray/lib/tuples"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		log.Fatal("Usage: nanoray <output.png>")
+	flag.Usage = func() {
+		log.Println("NanoRay - A path based ray tracer")
+		flag.PrintDefaults()
 	}
 
-	outputFile := os.Args[1]
+	inputScene := flag.String("file", "", "Scene file to render, in YAML format")
+	outputFile := flag.String("output", "render.png", "Rendered output PNG file name")
+	width := flag.Int("width", 800, "Width of the output image")
+	aspectRatio := flag.Float64("aspect", 16.0/9.0, "Aspect ratio of the output image")
+	samplesPP := flag.Int("samples", 20, "Samples per pixel, higher values give better quality but slower rendering")
+	maxDepth := flag.Int("depth", 5, "Maximum ray recursion depth")
+	chunky := flag.Int("chunk", 1, "Speed up rendering with chunky pixels")
 
-	err := os.MkdirAll(filepath.Dir(outputFile), os.ModePerm)
+	flag.Parse()
+
+	if *inputScene == "" {
+		flag.PrintDefaults()
+		log.Fatal("No scene file provided")
+	}
+
+	err := os.MkdirAll(filepath.Dir(*outputFile), os.ModePerm)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	c := raytrace.NewCamera(t.Vec3{0, -5, 170}, t.Zero(), 60)
+	cam := rt.NewCamera(t.Vec3{0, 0, 0}, t.Zero(), 60)
 
-	s := raytrace.Scene{}
-	s.MaxDepth = 5
+	sceneData, err := os.ReadFile("scenes/test.yaml")
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	sphere := raytrace.NewSphere(t.Vec3{-120, 0, -80}, 50)
-	sphere.Colour = t.RGB{1, 0, 0}
-	s.AddObject(sphere)
+	scene, err := rt.ParseScene(string(sceneData))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	big := raytrace.NewSphere(t.Vec3{0, -9050, -120}, 9000)
-	big.Colour = t.RGB{1, 1, 1}
-	s.AddObject(big)
-
-	sphere3 := raytrace.NewSphere(t.Vec3{0, 0, -100}, 50)
-	sphere3.Colour = t.RGB{1, 1, 0}
-	s.AddObject(sphere3)
-
-	sphere4 := raytrace.NewSphere(t.Vec3{120, 0, -80}, 50)
-	sphere4.Colour = t.RGB{0, 0.9, 0}
-	s.AddObject(sphere4)
+	render := rt.NewRender(*width, *aspectRatio)
+	render.SamplesPerPixel = *samplesPP
+	render.MaxDepth = *maxDepth
+	render.PixelChunk = *chunky
 
 	log.Println("🚀 Rendering started...")
 
-	img := Generate(c, s)
+	img := Generate(cam, *scene, render)
 
 	log.Println("📷 Rendering complete")
-	log.Println("🔹 ⌚ Time:", raytrace.Stat.Time)
-	log.Println("🔹 🔦 Rays:", raytrace.Stat.Rays)
+	log.Println("🔹 ⌚ Time:", rt.Stats.Time)
+	log.Printf("🔹 🔦 Rays: %f Mil", float64(rt.Stats.Rays)/1000000.0)
 
-	log.Println("💾 Writing: " + outputFile)
+	log.Println("💾 Writing: " + *outputFile)
 
-	f, err := os.Create(outputFile)
+	f, err := os.Create(*outputFile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -68,44 +80,37 @@ func main() {
 	}
 }
 
-func Generate(c raytrace.Camera, s raytrace.Scene) image.Image {
-	raytrace.Stat = raytrace.Stats{}
-	raytrace.Stat.Start = time.Now()
+func Generate(c rt.Camera, s rt.Scene, render rt.Render) image.Image {
+	rt.Stats.Start = time.Now()
 
-	totalJobs := 60
-	imgAspect := 4.0 / 3.0
-	imgW := 1800
-	imgH := int(float64(imgW) / imgAspect)
-	jobW := imgW
-	jobH := imgH / totalJobs
+	totalJobs := runtime.NumCPU()
+	jobW := render.Width
+	jobH := render.Height / totalJobs
 
 	jobCount := 0
 	results := make(chan *proto.JobResult)
-	img := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{imgW, imgH}})
+	imageOut := render.MakeImage()
 
-	for y := 0; y < imgH; y += jobH {
-		for x := 0; x < imgW; x += jobW {
+	for y := 0; y < render.Height; y += jobH {
+		for x := 0; x < render.Width; x += jobW {
 			go func() {
 				j := &proto.JobRequest{
 					Id:              int32(jobCount),
-					SceneId:         "__local__", // Not used in CLI version of the renderer
+					SceneId:         "", // Not used in CLI version of the renderer
 					Width:           int32(jobW),
 					Height:          int32(jobH),
 					X:               int32(x),
 					Y:               int32(y),
-					SamplesPerPixel: int32(30),
-					ChunkSize:       int32(1),
-					ImageDetails: &proto.ImageDetails{
-						Width:       int32(imgW),
-						Height:      int32(imgH),
-						AspectRatio: imgAspect,
-					},
+					SamplesPerPixel: int32(render.SamplesPerPixel),
+					ChunkSize:       int32(render.PixelChunk),
+					MaxDepth:        int32(render.MaxDepth),
+					ImageDetails:    render.ToProto(),
 				}
 
 				jobCount++
 
 				// Work all happens here, with the job + scene + camera
-				results <- raytrace.RenderJob(j, s, c)
+				results <- rt.RenderJob(j, s, c)
 			}()
 		}
 	}
@@ -119,15 +124,15 @@ func Generate(c raytrace.Camera, s raytrace.Scene) image.Image {
 		srcImg.Pix = res.ImageData
 
 		// Reconstruction of the main image from each job part
-		draw.Draw(img, image.Rect(int(res.Job.X), int(res.Job.Y), int(res.Job.X+res.Job.Width), int(res.Job.Y+res.Job.Height)), srcImg, image.Point{0, 0}, draw.Src)
+		draw.Draw(imageOut, image.Rect(int(res.Job.X), int(res.Job.Y), int(res.Job.X+res.Job.Width), int(res.Job.Y+res.Job.Height)), srcImg, image.Point{0, 0}, draw.Src)
 
 		if jobCount == 0 {
 			break
 		}
 	}
 
-	raytrace.Stat.End = time.Now()
-	raytrace.Stat.Time = raytrace.Stat.End.Sub(raytrace.Stat.Start)
+	rt.Stats.End = time.Now()
+	rt.Stats.Time = rt.Stats.End.Sub(rt.Stats.Start)
 
-	return img
+	return imageOut
 }

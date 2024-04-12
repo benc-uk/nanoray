@@ -1,0 +1,8 @@
+name: Test Scene
+camera:
+  position: [0, 0, 0]
+objects:
+  - type: sphere
+    position: [0, 0, -150]
+    radius: 51
+    colour: [1, 0, 0.6]

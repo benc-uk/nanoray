@@ -1,0 +1,9 @@
+{{ define "api/renders" }} 
+
+{{ range .Images }}
+  <tr>
+    <td><a href="/api/render/{{ . }}" target="_blank">{{ . }}</a></td>
+  </tr>
+{{ end }} 
+
+{{ end }}

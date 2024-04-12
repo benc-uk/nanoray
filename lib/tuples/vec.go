@@ -10,6 +10,21 @@ type Vec3 struct {
 	X, Y, Z float64
 }
 
+func (v *Vec3) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var tmp [3]float64
+
+	err := unmarshal(&tmp)
+	if err != nil {
+		return err
+	}
+
+	v.X = tmp[0]
+	v.Y = tmp[1]
+	v.Z = tmp[2]
+
+	return nil
+}
+
 func Zero() Vec3 {
 	return Vec3{0, 0, 0}
 }

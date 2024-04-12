@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"nanoray/shared/controller"
+	"nanoray/lib/controller"
 )
 
 var portFlag = flag.String("port", "8000", "The port to listen on")

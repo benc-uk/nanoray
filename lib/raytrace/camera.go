@@ -2,8 +2,8 @@ package raytrace
 
 import (
 	"math"
-	"nanoray/shared/proto"
-	t "nanoray/shared/tuples"
+	"nanoray/lib/proto"
+	t "nanoray/lib/tuples"
 )
 
 type Camera struct {

@@ -2,7 +2,7 @@ package raytrace
 
 import (
 	"math"
-	t "nanoray/shared/tuples"
+	t "nanoray/lib/tuples"
 )
 
 type Object struct {

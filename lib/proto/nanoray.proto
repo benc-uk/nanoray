@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
+option go_package = "raynet/pkg/proto";
+
+service Worker {
+  rpc Ping(Void) returns (Void);
+  rpc LoadScene(SceneRaw) returns (Void);
+  rpc NewJob(JobRequest) returns (Void);
+}
+
+service Controller {
+  rpc RegisterWorker(WorkerInfo) returns (Void);
+  rpc JobComplete(JobResult) returns (Void);
+
+  // Used by frontend 
+  rpc GetWorkers(Void) returns (WorkerList);
+  rpc StartRender(RenderRequest) returns (Void);
+  rpc GetProgress(Void) returns (Progress);
+  rpc ListRenderedImages(Void) returns (ImageList);
+  rpc GetRenderedImage(google.protobuf.StringValue) returns (google.protobuf.BytesValue);
+}
+
+message RenderRequest {
+  string sceneData = 1;
+  ImageDetails imageDetails = 2;
+  int32 samplesPerPixel = 3;
+  int32 chunkSize = 4;
+  int32 maxDepth = 5;
+}
+
+message JobRequest {
+  int32 id = 2;
+  string sceneId = 1;
+  ImageDetails imageDetails = 3;
+  int32 x = 4;      // Offset position X of this job in the image
+  int32 y = 5;      // Offset position Y of this job in the image
+  int32 width = 6;  // Width of the image for this job not the whole image
+  int32 height = 7; // Height of the image of this job not the whole image
+
+  int32 samplesPerPixel = 8; // Number of samples per pixel
+  int32 chunkSize = 9;       // Number of pixels to render at once for speed
+  int32 maxDepth = 10;       // Maximum depth of the ray
+}
+
+message ImageDetails {
+  int32 width = 1;
+  int32 height = 2;
+  double aspectRatio = 3;
+}
+
+message JobResult {
+  bytes imageData = 3;
+  google.protobuf.Duration timeTaken = 4;
+  WorkerInfo worker = 5;
+  JobRequest job = 6;
+}
+
+message WorkerInfo {
+  string id = 1;
+  string host = 2;
+  int32  port = 3;
+  int32  index = 4;
+  int32  maxJobs = 5;
+}
+
+message WorkerList {
+  repeated WorkerInfo workers = 1;
+}
+
+message SceneRaw {
+  string data = 1;
+}
+
+message Void {}
+
+message Progress {
+  int32 totalJobs = 1;
+  int32 completedJobs = 2;
+}
+
+message ImageList {
+  repeated string images = 1;
+}

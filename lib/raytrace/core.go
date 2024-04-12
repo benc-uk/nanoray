@@ -2,7 +2,7 @@ package raytrace
 
 import (
 	"math"
-	v "nanoray/shared/tuples"
+	v "nanoray/lib/tuples"
 	"strconv"
 )
 
@@ -16,12 +16,12 @@ type Ray struct {
 }
 
 func NewRay(origin, direction v.Vec3) Ray {
-	Stat.Rays++
+	Stats.Rays++
 	return Ray{origin, direction}
 }
 
-func (r Ray) Shade(s Scene, depth int) v.RGB {
-	if depth > s.MaxDepth {
+func (r Ray) Shade(s Scene, depth int, maxDepth int) v.RGB {
+	if depth > maxDepth {
 		return v.Black()
 	}
 
@@ -41,7 +41,7 @@ func (r Ray) Shade(s Scene, depth int) v.RGB {
 		randDir := normal.AddNew(v.RandVecSphere(true))
 		randRay := NewRay(hit.P, randDir)
 
-		bounceColour := randRay.Shade(s, depth+1)
+		bounceColour := randRay.Shade(s, depth+1, maxDepth)
 
 		// Only return 50% of the object colour
 		objColour := v.White().Blend(hit.O.Colour, 0.7)

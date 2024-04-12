@@ -9,6 +9,21 @@ type RGB struct {
 	R, G, B float64
 }
 
+func (v *RGB) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var tmp [3]float64
+
+	err := unmarshal(&tmp)
+	if err != nil {
+		return err
+	}
+
+	v.R = tmp[0]
+	v.G = tmp[1]
+	v.B = tmp[2]
+
+	return nil
+}
+
 func (c *RGB) Clamp() {
 	c.R = math.Min(1, math.Max(0, c.R))
 	c.G = math.Min(1, math.Max(0, c.G))

@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials/insecure"
 
-	pb "nanoray/shared/proto"
+	pb "nanoray/lib/proto"
 )
 
 var Client pb.ControllerClient

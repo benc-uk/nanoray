@@ -8,7 +8,7 @@ import (
 	"os"
 	"strconv"
 
-	pb "nanoray/shared/proto"
+	pb "nanoray/lib/proto"
 
 	"google.golang.org/grpc"
 )

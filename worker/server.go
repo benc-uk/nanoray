@@ -3,40 +3,26 @@ package main
 import (
 	"context"
 	"log"
+	"time"
 
-	"nanoray/shared/controller"
-	pb "nanoray/shared/proto"
-	"nanoray/shared/raytrace"
-	t "nanoray/shared/tuples"
+	"nanoray/lib/controller"
+	pb "nanoray/lib/proto"
+	"nanoray/lib/raytrace"
+	t "nanoray/lib/tuples"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type server struct {
 	pb.UnimplementedWorkerServer
 }
 
-var s raytrace.Scene
+var scene *raytrace.Scene
 var c raytrace.Camera
 
 func init() {
-	s = raytrace.Scene{}
-	s.MaxDepth = 5
-	sphere := raytrace.NewSphere(t.Vec3{-120, 0, -80}, 50)
-	sphere.Colour = t.RGB{1, 0, 0}
-	s.AddObject(sphere)
-
-	big := raytrace.NewSphere(t.Vec3{0, -9050, -120}, 9000)
-	big.Colour = t.RGB{1, 1, 1}
-	s.AddObject(big)
-
-	sphere3 := raytrace.NewSphere(t.Vec3{0, 0, -100}, 50)
-	sphere3.Colour = t.RGB{1, 1, 0}
-	s.AddObject(sphere3)
-
-	sphere4 := raytrace.NewSphere(t.Vec3{120, 0, -80}, 50)
-	sphere4.Colour = t.RGB{0, 0.9, 0}
-	s.AddObject(sphere4)
-
-	c = raytrace.NewCamera(t.Vec3{0, -5, 170}, t.Zero(), 60)
+	c = raytrace.NewCamera(t.Vec3{0, 0, 0}, t.Zero(), 60)
 }
 
 func (s *server) NewJob(ctx context.Context, job *pb.JobRequest) (*pb.Void, error) {
@@ -52,13 +38,11 @@ func (s *server) Ping(ctx context.Context, in *pb.Void) (*pb.Void, error) {
 }
 
 func runJob(job *pb.JobRequest) error {
-	// Get the scene from the server NOT USED YET
-	// scene, err := controller.Client.GetScene(context.Background(), &pb.SceneRequest{Id: job.SceneId})
-	// log.Printf("Got scene: %s", scene.Data)
+	if scene == nil {
+		return status.Errorf(codes.FailedPrecondition, "No scene loaded")
+	}
 
-	// 🔥🔥🔥 TEMP SCENE
-
-	res := raytrace.RenderJob(job, s, c)
+	res := raytrace.RenderJob(job, *scene, c)
 	res.Worker = &workerInfo
 
 	_, err := controller.Client.JobComplete(context.Background(), res)
@@ -68,4 +52,20 @@ func runJob(job *pb.JobRequest) error {
 	}
 
 	return nil
+}
+
+func (s *server) LoadScene(ctx context.Context, in *pb.SceneRaw) (*pb.Void, error) {
+	log.Printf("Received new scene data, will parse it")
+
+	sceneData := in.Data
+	sceneNew, err := raytrace.ParseScene(sceneData)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "Failed to parse scene data: %s", err.Error())
+	}
+
+	scene = sceneNew
+
+	time.Sleep(1 * time.Second)
+
+	return nil, nil
 }

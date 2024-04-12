@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"image"
 	"image/draw"
 	"image/png"
@@ -10,56 +11,54 @@ import (
 	"sync"
 	"time"
 
-	pb "nanoray/shared/proto"
-	"nanoray/shared/raytrace"
+	pb "nanoray/lib/proto"
+	rt "nanoray/lib/raytrace"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 type server struct {
 	pb.UnimplementedControllerServer
 }
 
-var netRender *raytrace.NetworkRender
+var netRender *rt.NetworkRender
 var img *image.RGBA
+var sceneData string
 
 var jobIdCounter int32 = 0
 
-func (s *server) GetScene(ctx context.Context, in *pb.SceneRequest) (*pb.SceneResult, error) {
-	log.Printf("Returning scene")
-
-	return &pb.SceneResult{}, nil
-}
-
-func (s *server) StartRender(ctx context.Context, in *pb.Void) (*pb.Void, error) {
+func (s *server) StartRender(ctx context.Context, in *pb.RenderRequest) (*pb.Void, error) {
 	if workerCount == 0 {
 		log.Printf("No workers available to start render")
 		return nil, status.Errorf(codes.FailedPrecondition, "No workers available to start render")
 	}
 
-	// Create a new render object
-	//render := raytrace.NewRender(800, 16/9)
-	netRender = &raytrace.NetworkRender{
-		Status:       raytrace.READY,
+	netRender = &rt.NetworkRender{
+		Status:       rt.READY,
 		JobQueue:     sync.Map{},
 		JobsTotal:    0,
 		JobsComplete: 0,
 		Start:        time.Now(),
 	}
 
-	totalJobs := 60
-	imgAspect := 4.0 / 3.0
-	imgW := 1800
-	imgH := int(float64(imgW) / imgAspect)
-	jobW := imgW
-	jobH := imgH / totalJobs
+	sceneData = in.SceneData
 
-	img = image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{imgW, imgH}})
+	render := rt.NewRender(int(in.ImageDetails.Width), in.ImageDetails.AspectRatio)
+	render.SamplesPerPixel = int(in.SamplesPerPixel)
+	render.MaxDepth = int(in.MaxDepth)
+	render.PixelChunk = int(in.ChunkSize)
 
-	jobCount := 0
-	for y := 0; y < imgH; y += jobH {
-		for x := 0; x < imgW; x += jobW {
+	slices := 64
+	jobW := int(in.ImageDetails.Width)
+	jobH := int(in.ImageDetails.Height) / slices
+
+	img = render.MakeImage()
+
+	totalJobs := 0
+	for y := 0; y < render.Height; y += jobH {
+		for x := 0; x < render.Width; x += jobW {
 			netRender.JobQueue.Store(jobIdCounter, &pb.JobRequest{
 				Id:              jobIdCounter,
 				SceneId:         "test",
@@ -67,27 +66,29 @@ func (s *server) StartRender(ctx context.Context, in *pb.Void) (*pb.Void, error)
 				Height:          int32(jobH),
 				X:               int32(x),
 				Y:               int32(y),
-				SamplesPerPixel: int32(30),
-				ChunkSize:       int32(1),
-				ImageDetails: &pb.ImageDetails{
-					Width:       int32(imgW),
-					Height:      int32(imgH),
-					AspectRatio: imgAspect,
-				},
+				SamplesPerPixel: int32(render.SamplesPerPixel),
+				ChunkSize:       int32(render.PixelChunk),
+				MaxDepth:        int32(render.MaxDepth),
+				ImageDetails:    render.ToProto(),
 			})
 
 			jobIdCounter++
-			jobCount++
+			totalJobs++
 		}
 	}
 
-	log.Printf("Starting render with %d jobs", jobCount)
+	log.Printf("Starting render with %d jobs", totalJobs)
 
-	netRender.JobsTotal = jobCount
+	netRender.JobsTotal = totalJobs
 
 	workers.Range(func(_, worker interface{}) bool {
 		w := worker.(WorkerConnection)
 		maxJobs := w.Worker.MaxJobs
+
+		timeoutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		w.Client.LoadScene(timeoutCtx, &pb.SceneRaw{Data: string(sceneData)})
+
 		netRender.JobQueue.Range(func(jobId, job interface{}) bool {
 			if maxJobs == 0 {
 				log.Printf("Initial %d jobs dispatched to worker %s", w.Worker.MaxJobs, w.Worker.Id)
@@ -133,7 +134,8 @@ func (s *server) JobComplete(ctx context.Context, result *pb.JobResult) (*pb.Voi
 		log.Printf("Time to complete: %s", time.Since(netRender.Start))
 		log.Printf("All jobs completed, saving file!!!")
 
-		f, err := os.Create("render.png")
+		os.Mkdir("output", os.ModePerm)
+		f, err := os.Create(fmt.Sprintf("output/%s.png", time.Now().Format("2006-01-02-15-04-05")))
 		if err != nil {
 			log.Printf("Failed to create render file\n%s", err.Error())
 			return nil, err
@@ -146,7 +148,7 @@ func (s *server) JobComplete(ctx context.Context, result *pb.JobResult) (*pb.Voi
 			return nil, err
 		}
 
-		netRender.Status = raytrace.COMPLETE
+		netRender.Status = rt.COMPLETE
 	} else {
 		var nextJob *pb.JobRequest = nil
 		netRender.JobQueue.Range(func(_, job interface{}) bool {
@@ -182,4 +184,59 @@ func (s *server) GetProgress(ctx context.Context, in *pb.Void) (*pb.Progress, er
 		TotalJobs:     int32(netRender.JobsTotal),
 		CompletedJobs: int32(netRender.JobsComplete),
 	}, nil
+}
+
+func (s *server) ListRenderedImages(ctx context.Context, in *pb.Void) (*pb.ImageList, error) {
+	files, err := os.ReadDir("output")
+	if err != nil {
+		return nil, err
+	}
+
+	var images []string
+	for _, file := range files {
+		images = append(images, file.Name())
+	}
+	for i, j := 0, len(images)-1; i < j; i, j = i+1, j-1 {
+		images[i], images[j] = images[j], images[i]
+	}
+
+	return &pb.ImageList{
+		Images: images,
+	}, nil
+}
+
+func (s *server) GetRenderedImage(ctx context.Context, in *wrapperspb.StringValue) (*wrapperspb.BytesValue, error) {
+	if in.Value == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "No image name provided")
+	}
+
+	if in.Value == "latest" {
+		files, err := os.ReadDir("output")
+		if err != nil {
+			return nil, err
+		}
+
+		if len(files) == 0 {
+			return nil, status.Errorf(codes.NotFound, "No images found")
+		}
+
+		in.Value = files[len(files)-1].Name()
+	}
+
+	if _, err := os.Stat(fmt.Sprintf("output/%s", in.Value)); os.IsNotExist(err) {
+		return nil, status.Errorf(codes.NotFound, "Image not found")
+	}
+
+	f, err := os.Open(fmt.Sprintf("output/%s", in.Value))
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	rawBytes, err := os.ReadFile(fmt.Sprintf("output/%s", in.Value))
+	if err != nil {
+		return nil, err
+	}
+
+	return &wrapperspb.BytesValue{Value: rawBytes}, nil
 }

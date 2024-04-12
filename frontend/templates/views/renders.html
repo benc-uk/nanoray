@@ -2,5 +2,13 @@
 
 <li id="rendersNav" class="is-active" hx-swap-oob="true"><a hx-get="view/renders">Renders</a></li>
 
-<h1>Not implemented</h1>
+<table class="table">
+  <thead>
+    <tr id="rendersTableHead">
+      <th class="is-success has-text-dark">Name</th>
+    </tr>
+  </thead>
+  <tbody hx-get="/api/render" hx-trigger="load" hx-swap="innerHTML"></tbody>
+</table>
+
 {{ end }}
