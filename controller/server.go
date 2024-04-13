@@ -25,11 +25,18 @@ type server struct {
 
 var netRender *rt.NetworkRender
 var img *image.RGBA
-var sceneData string
 
 var jobIdCounter int32 = 0
 
 func (s *server) StartRender(ctx context.Context, in *pb.RenderRequest) (*pb.Void, error) {
+
+	// Try to parse the scene data
+	_, err := rt.ParseScene(in.SceneData)
+	if err != nil {
+		log.Printf("Failed to parse scene data\n%s", err.Error())
+		return nil, status.Errorf(codes.Aborted, "Failed to parse scene data: %s", err.Error())
+	}
+
 	if workerCount == 0 {
 		log.Printf("No workers available to start render")
 		return nil, status.Errorf(codes.FailedPrecondition, "No workers available to start render")
@@ -44,14 +51,13 @@ func (s *server) StartRender(ctx context.Context, in *pb.RenderRequest) (*pb.Voi
 		OutputName:   time.Now().Format("2006-01-02_15:04:05"),
 	}
 
-	sceneData = in.SceneData
+	sceneData := in.SceneData
 
 	render := rt.NewRender(int(in.ImageDetails.Width), in.ImageDetails.AspectRatio)
 	render.SamplesPerPixel = int(in.SamplesPerPixel)
 	render.MaxDepth = int(in.MaxDepth)
-	render.PixelChunk = int(in.ChunkSize)
 
-	slices := 64
+	slices := 12
 	jobW := int(in.ImageDetails.Width)
 	jobH := int(in.ImageDetails.Height) / slices
 
@@ -68,7 +74,6 @@ func (s *server) StartRender(ctx context.Context, in *pb.RenderRequest) (*pb.Voi
 				X:               int32(x),
 				Y:               int32(y),
 				SamplesPerPixel: int32(render.SamplesPerPixel),
-				ChunkSize:       int32(render.PixelChunk),
 				MaxDepth:        int32(render.MaxDepth),
 				ImageDetails:    render.ToProto(),
 			})

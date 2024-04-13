@@ -1,6 +1,6 @@
 {{ define "api/render-progress-end" }}
 
-<button id="startBtn" class="button is-primary mb-2" hx-swap-oob="true" hx-post="api/render" hx-swap="none" hx-on:click="clearError()"> Render</button>
+<button id="startBtn" class="button is-primary mb-2" hx-swap-oob="true" hx-post="api/render" hx-swap="none" hx-on:click="clearError(); this.disabled = true"> Render</button>
 
 <div id="output" hx-swap-oob="true" class="mt-4">
   <img src="/api/render/{{ .OutputName }}.png" style="width:100%"/>

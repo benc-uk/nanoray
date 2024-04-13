@@ -3,7 +3,7 @@ tmp_dir = "tmp"
 
 [build]
 include_ext = ["go"]
-include_dir = ["controller", "pkg"]
+include_dir = ["controller", "lib"]
 cmd = "go build -o ./tmp/main ./..."
 
 [misc]

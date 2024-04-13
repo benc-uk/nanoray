@@ -1,6 +1,7 @@
 package tuples
 
 import (
+	"fmt"
 	"image/color"
 	"math"
 )
@@ -10,16 +11,19 @@ type RGB struct {
 }
 
 func (v *RGB) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var tmp [3]float64
-
-	err := unmarshal(&tmp)
+	var data []float64
+	err := unmarshal(&data)
 	if err != nil {
 		return err
 	}
 
-	v.R = tmp[0]
-	v.G = tmp[1]
-	v.B = tmp[2]
+	if len(data) != 3 {
+		return fmt.Errorf("cannot unmarshal RGB from %v", data)
+	}
+
+	v.R = data[0]
+	v.G = data[1]
+	v.B = data[2]
 
 	return nil
 }

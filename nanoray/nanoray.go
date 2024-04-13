@@ -7,12 +7,13 @@ import (
 	"image/png"
 	"log"
 	"nanoray/lib/proto"
-	rt "nanoray/lib/raytrace"
-	t "nanoray/lib/tuples"
 	"os"
 	"path/filepath"
 	"runtime"
 	"time"
+
+	rt "nanoray/lib/raytrace"
+	t "nanoray/lib/tuples"
 )
 
 func main() {
@@ -27,7 +28,6 @@ func main() {
 	aspectRatio := flag.Float64("aspect", 16.0/9.0, "Aspect ratio of the output image")
 	samplesPP := flag.Int("samples", 20, "Samples per pixel, higher values give better quality but slower rendering")
 	maxDepth := flag.Int("depth", 5, "Maximum ray recursion depth")
-	chunky := flag.Int("chunk", 1, "Speed up rendering with chunky pixels")
 
 	flag.Parse()
 
@@ -56,7 +56,6 @@ func main() {
 	render := rt.NewRender(*width, *aspectRatio)
 	render.SamplesPerPixel = *samplesPP
 	render.MaxDepth = *maxDepth
-	render.PixelChunk = *chunky
 
 	log.Println("🚀 Rendering started...")
 
@@ -82,6 +81,7 @@ func main() {
 
 func Generate(c rt.Camera, s rt.Scene, render rt.Render) image.Image {
 	rt.Stats.Start = time.Now()
+	imageOut := render.MakeImage()
 
 	totalJobs := runtime.NumCPU()
 	jobW := render.Width
@@ -89,7 +89,6 @@ func Generate(c rt.Camera, s rt.Scene, render rt.Render) image.Image {
 
 	jobCount := 0
 	results := make(chan *proto.JobResult)
-	imageOut := render.MakeImage()
 
 	for y := 0; y < render.Height; y += jobH {
 		for x := 0; x < render.Width; x += jobW {
@@ -102,7 +101,6 @@ func Generate(c rt.Camera, s rt.Scene, render rt.Render) image.Image {
 					X:               int32(x),
 					Y:               int32(y),
 					SamplesPerPixel: int32(render.SamplesPerPixel),
-					ChunkSize:       int32(render.PixelChunk),
 					MaxDepth:        int32(render.MaxDepth),
 					ImageDetails:    render.ToProto(),
 				}
@@ -120,11 +118,11 @@ func Generate(c rt.Camera, s rt.Scene, render rt.Render) image.Image {
 		log.Printf("Job %d complete", res.Job.Id)
 		jobCount--
 
-		srcImg := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{int(res.Job.Width), int(res.Job.Height)}})
-		srcImg.Pix = res.ImageData
+		jobImg := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{int(res.Job.Width), int(res.Job.Height)}})
+		jobImg.Pix = res.ImageData
 
 		// Reconstruction of the main image from each job part
-		draw.Draw(imageOut, image.Rect(int(res.Job.X), int(res.Job.Y), int(res.Job.X+res.Job.Width), int(res.Job.Y+res.Job.Height)), srcImg, image.Point{0, 0}, draw.Src)
+		draw.Draw(imageOut, image.Rect(int(res.Job.X), int(res.Job.Y), int(res.Job.X+res.Job.Width), int(res.Job.Y+res.Job.Height)), jobImg, image.Point{0, 0}, draw.Src)
 
 		if jobCount == 0 {
 			break

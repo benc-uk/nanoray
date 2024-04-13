@@ -41,7 +41,6 @@ type Render struct {
 	AspectRatio     float64 `yaml:"aspectRatio"`
 	SamplesPerPixel int     `yaml:"samplesPerPixel"`
 	MaxDepth        int     `yaml:"maxDepth"`
-	PixelChunk      int     `yaml:"pixelChunks"`
 }
 
 var (
@@ -55,7 +54,6 @@ func NewRender(width int, aspectRatio float64) Render {
 		AspectRatio:     aspectRatio,
 		SamplesPerPixel: 10,
 		MaxDepth:        5,
-		PixelChunk:      1,
 	}
 }
 
@@ -76,12 +74,11 @@ func RenderJob(job *proto.JobRequest, s Scene, c Camera) *proto.JobResult {
 
 	samplesPerPixel := int(job.SamplesPerPixel)
 	sampleScale := 1.0 / float64(samplesPerPixel)
-	chunk := int(job.ChunkSize)
 
 	jobImg := image.NewRGBA(image.Rect(0, 0, int(job.Width), int(job.Height)))
 
-	for y := 0; y < int(job.Height); y += chunk {
-		for x := 0; x < int(job.Width); x += chunk {
+	for y := 0; y < int(job.Height); y += 1 {
+		for x := 0; x < int(job.Width); x += 1 {
 			// Note that x and y are relative to the job, not the image
 			xf := float64(x) + float64(job.X)
 			yf := float64(y) + float64(job.Y)
@@ -101,15 +98,6 @@ func RenderJob(job *proto.JobRequest, s Scene, c Camera) *proto.JobResult {
 			}
 
 			jobImg.Set(x, y, pixel.ToRGBA())
-
-			// For speedy chunky mode, fill in the rest of the chunk
-			if chunk > 1 {
-				for y2 := y; y2 < y+chunk; y2++ {
-					for x2 := x; x2 < x+chunk; x2++ {
-						jobImg.Set(x2, y2, pixel.ToRGBA())
-					}
-				}
-			}
 		}
 	}
 

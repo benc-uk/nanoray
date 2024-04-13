@@ -1,7 +1,5 @@
 {{ define "api/render-start" }} 
 
-<button id="startBtn" hx-swap-oob="true" style="display: none;"></button>
-
 <div id="progress" hx-swap-oob="true">
   <progress max="{{ .TotalJobs }}" value="{{ .CompletedJobs }}" hx-get="api/render/progress" hx-trigger="every 0.5s" hx-swap="outerHTML"></progress> 
 </div>

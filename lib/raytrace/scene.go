@@ -41,11 +41,19 @@ func ParseScene(sceneData string) (*Scene, error) {
 	for _, obj := range sceneFile.Objects {
 		switch obj.Type {
 		case "sphere":
-			sphere := NewSphere(obj.Position, obj.Radius)
+			sphere, err := NewSphere(obj.Position, obj.Radius)
+			if err != nil {
+				log.Printf("Failed to create sphere: %s", err.Error())
+				continue
+			}
 			sphere.Colour = obj.Colour
 			scene.AddObject(sphere)
+
 			log.Printf("Added sphere at %v with radius %f", obj.Position, obj.Radius)
+			continue
 		}
+
+		log.Printf("Skipping unknown object type: %s", obj.Type)
 	}
 
 	return scene, nil

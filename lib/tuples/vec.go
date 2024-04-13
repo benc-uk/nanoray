@@ -10,17 +10,20 @@ type Vec3 struct {
 	X, Y, Z float64
 }
 
-func (v *Vec3) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var tmp [3]float64
-
-	err := unmarshal(&tmp)
+func (v *Vec3) UnmarshalYAML(unmarshal func(in any) error) error {
+	var data []float64
+	err := unmarshal(&data)
 	if err != nil {
 		return err
 	}
 
-	v.X = tmp[0]
-	v.Y = tmp[1]
-	v.Z = tmp[2]
+	if len(data) != 3 {
+		return fmt.Errorf("cannot unmarshal Vec3 from %v", data)
+	}
+
+	v.X = data[0]
+	v.Y = data[1]
+	v.Z = data[2]
 
 	return nil
 }

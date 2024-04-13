@@ -17,15 +17,19 @@ type Sphere struct {
 	Radius float64
 }
 
-func NewSphere(position t.Vec3, radius float64) Sphere {
-	return Sphere{
+func NewSphere(position t.Vec3, radius float64) (*Sphere, error) {
+	if radius <= 0 {
+		return nil, ErrInvalidRadius
+	}
+
+	return &Sphere{
 		Object: Object{
 			Position: position,
 			Id:       "sphere_" + GenerateID("sphere") + position.String(),
 		},
 
 		Radius: radius,
-	}
+	}, nil
 }
 
 func (s Sphere) Hit(r Ray, interval Interval) (bool, Hit) {

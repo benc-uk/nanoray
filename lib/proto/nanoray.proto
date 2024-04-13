@@ -40,7 +40,6 @@ message JobRequest {
   int32 height = 7; // Height of the image of this job not the whole image
 
   int32 samplesPerPixel = 8; // Number of samples per pixel
-  int32 chunkSize = 9;       // Number of pixels to render at once for speed
   int32 maxDepth = 10;       // Maximum depth of the ray
 }
 
