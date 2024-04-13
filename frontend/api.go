@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"nanoray/lib/controller"
 	"nanoray/lib/proto"
@@ -19,11 +18,17 @@ func addAPIRoutes(mux *http.ServeMux, templates *HTMLRenderer) {
 			return
 		}
 
-		templates.Render(w, "api/workers", data)
+		_ = templates.Render(w, "api/workers", data)
 	})
 
 	mux.HandleFunc("GET /api/render/progress", func(w http.ResponseWriter, r *http.Request) {
 		data, _ := controller.Client.GetProgress(r.Context(), nil)
+
+		// Special case for when the render is complete
+		if data.CompletedJobs == data.TotalJobs {
+			templates.Render(w, "api/render-progress-end", data)
+			return
+		}
 
 		templates.Render(w, "api/render-progress", data)
 	})
@@ -36,7 +41,7 @@ func addAPIRoutes(mux *http.ServeMux, templates *HTMLRenderer) {
 		height := int(float64(width) / aspectRatio)
 		samplesPerPixel, _ := strconv.Atoi(r.FormValue("samples"))
 
-		resp, err := controller.Client.StartRender(r.Context(), &proto.RenderRequest{
+		_, err := controller.Client.StartRender(r.Context(), &proto.RenderRequest{
 			SceneData: sceneData,
 			ImageDetails: &proto.ImageDetails{
 				Width:       int32(width),
@@ -54,13 +59,12 @@ func addAPIRoutes(mux *http.ServeMux, templates *HTMLRenderer) {
 			return
 		}
 
-		w.Write([]byte(fmt.Sprintf("Render started: %s", resp)))
+		templates.Render(w, "api/render-start", nil)
 	})
 
 	mux.HandleFunc("GET /api/render", func(w http.ResponseWriter, r *http.Request) {
 		data, _ := controller.Client.ListRenderedImages(r.Context(), nil)
 
-		log.Println(data.Images)
 		templates.Render(w, "api/renders", data)
 	})
 
@@ -74,6 +78,5 @@ func addAPIRoutes(mux *http.ServeMux, templates *HTMLRenderer) {
 
 		w.Header().Set("Content-Type", "image/png")
 		w.Write(data.Value)
-
 	})
 }

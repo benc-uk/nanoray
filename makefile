@@ -56,6 +56,7 @@ clean: ## 🧹 Clean up, remove dev data and temp files
 	@figlet $@ || true
 	@rm -rf lib/proto/*.pb.go || true
 	@find . -type d -name tmp -exec rm -r "{}" \; || true
+	@rm -f controller/output/*.png
 
 proto: ## 🚀 Generate protobuf files
 	@figlet $@ || true

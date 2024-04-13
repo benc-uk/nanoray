@@ -78,6 +78,7 @@ message Void {}
 message Progress {
   int32 totalJobs = 1;
   int32 completedJobs = 2;
+  string outputName = 3;
 }
 
 message ImageList {

@@ -3,7 +3,7 @@
 <li id="sceneNav" class="is-active" hx-swap-oob="true"><a hx-get="view/scene">Scene Editor</a></li>
 
 <form>
-  <div class="is-flex">
+  <div class="is-flex is-align-items-center">
     <div class="field pr-4">
       <label class="label">Width</label>
       <div class="select">
@@ -27,7 +27,6 @@
           <option value="1">1:1</option>
           <option value="1.33333">4:3</option>
           <option selected value="1.77777">16:9</option>
-          <option value="1.6">16:10</option>
           <option value="2.33333">21:9</option>
         </select>
       </div>
@@ -35,26 +34,53 @@
 
     <div class="field pr-4">
       <label class="label">Samples</label>
+      <div class="is-flex">
       <div class="input" name="samples">
-        <input name="samples" type="range" min="1" max="200" value="20"/>
+        <input name="samples" type="range" min="1" max="500" value="20" oninput="document.querySelector('#samplesNum').value=this.value"/>
       </div>
+      <input class="input" name="samples" disabled style="width: 3.2rem;" id="samplesNum" value="20"/>
+    </div>
     </div>
 
-    <button class="button is-primary mb-2" hx-post="api/render" hx-swap="none" hx-on:click="clearError()">Start Render</button>
+    <div class="field pr-4">
+      <label class="label">&nbsp;</label>
+      <div class="control">
+        <button id="startBtn" class="button is-primary mb-4" hx-post="api/render" hx-swap="none" hx-on:click="clearError(); this.disabled=true">Render</button>
+      </div>
+    </div>
   </div>
+ 
+  <input type="hidden" name="sceneData" value="">
 
-  <textarea class="textarea is-info" rows="10" name="sceneData" style="font-family: 'Cascadia Code', Consolas, monospace">
-name: Test Scene
-camera:
-  position: [0, 0, 0]
-objects:
-  - type: sphere
-    position: [0, 0, -150]
-    radius: 51
-    colour: [1, 0, 0.6]
-</textarea>
+  <link href="https://cdn.jsdelivr.net/npm/vscode-codicons@0.0.17/dist/codicon.min.css" rel="stylesheet">
+  <div class="monaco" style="min-height: 200px"></div>
+  <script type="module">
+    import * as monaco from 'https://cdn.jsdelivr.net/npm/monaco-editor@0.47.0/+esm';
+
+    const editor = monaco.editor.create(document.querySelector('.monaco'), {
+      value: localStorage.getItem('sceneText') || `{}`,
+      theme: 'vs-dark',
+      language: 'yaml',
+      automaticLayout: true,
+      minimap: {
+        enabled: false
+      }
+    });
+
+    // enable save to local storage
+    editor.onDidChangeModelContent(() => {
+      localStorage.setItem('sceneText', editor.getValue());
+      document.querySelector('input[name=sceneData]').value = editor.getValue();
+    });
+
+    document.querySelector('input[name=sceneData]').value = editor.getValue();
+  </script>
 </form>
 
-<progress max="0" value="0" hx-get="api/render/progress" hx-trigger="load" hx-swap="outerHTML"></progress> 
+<div id="progress">
+</div>
+
+<div id="output">
+</div>
 
 {{ end }}

@@ -32,6 +32,7 @@ type NetworkRender struct {
 	JobsTotal    int
 	JobsComplete int
 	Start        time.Time
+	OutputName   string
 }
 
 type Render struct {
@@ -71,7 +72,7 @@ func (r Render) ToProto() *proto.ImageDetails {
 }
 
 func RenderJob(job *proto.JobRequest, s Scene, c Camera) *proto.JobResult {
-	log.Printf("Rendering job %d, w:%d, h:%d (%d,%d) samp:%d", job.Id, job.Width, job.Height, job.X, job.Y, job.SamplesPerPixel)
+	log.Printf("Rendering job %d, h:%d (%d) samp:%d", job.Id, job.Height, job.Y, job.SamplesPerPixel)
 
 	samplesPerPixel := int(job.SamplesPerPixel)
 	sampleScale := 1.0 / float64(samplesPerPixel)

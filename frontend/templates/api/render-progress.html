@@ -1,4 +1,4 @@
-{{ define "api/render-progress" }} 
+{{ define "api/render-progress" }}
 
 <progress max="{{ .TotalJobs }}" value="{{ .CompletedJobs }}" hx-get="api/render/progress" hx-trigger="every 0.5s" hx-swap="outerHTML"></progress> 
 

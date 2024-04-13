@@ -41,6 +41,7 @@ func (s *server) StartRender(ctx context.Context, in *pb.RenderRequest) (*pb.Voi
 		JobsTotal:    0,
 		JobsComplete: 0,
 		Start:        time.Now(),
+		OutputName:   time.Now().Format("2006-01-02_15:04:05"),
 	}
 
 	sceneData = in.SceneData
@@ -135,7 +136,7 @@ func (s *server) JobComplete(ctx context.Context, result *pb.JobResult) (*pb.Voi
 		log.Printf("All jobs completed, saving file!!!")
 
 		os.Mkdir("output", os.ModePerm)
-		f, err := os.Create(fmt.Sprintf("output/%s.png", time.Now().Format("2006-01-02-15-04-05")))
+		f, err := os.Create(fmt.Sprintf("output/%s.png", netRender.OutputName))
 		if err != nil {
 			log.Printf("Failed to create render file\n%s", err.Error())
 			return nil, err
@@ -174,6 +175,7 @@ func (s *server) GetProgress(ctx context.Context, in *pb.Void) (*pb.Progress, er
 		return &pb.Progress{
 			TotalJobs:     0,
 			CompletedJobs: 0,
+			OutputName:    netRender.OutputName,
 		}, nil
 	}
 
@@ -183,6 +185,7 @@ func (s *server) GetProgress(ctx context.Context, in *pb.Void) (*pb.Progress, er
 	return &pb.Progress{
 		TotalJobs:     int32(netRender.JobsTotal),
 		CompletedJobs: int32(netRender.JobsComplete),
+		OutputName:    netRender.OutputName,
 	}, nil
 }
 
