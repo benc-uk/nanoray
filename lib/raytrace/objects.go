@@ -36,8 +36,8 @@ func (s Sphere) Hit(r Ray, interval Interval) (bool, Hit) {
 	oc := r.Origin
 	oc.Sub(s.Position)
 
-	a := r.Direction.Dot(r.Direction)
-	b := oc.Dot(r.Direction)
+	a := r.Dir.Dot(r.Dir)
+	b := oc.Dot(r.Dir)
 	c := oc.Dot(oc) - s.Radius*s.Radius
 
 	discriminant := b*b - a*c

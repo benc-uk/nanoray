@@ -29,9 +29,12 @@ var img *image.RGBA
 var jobIdCounter int32 = 0
 
 func (s *server) StartRender(ctx context.Context, in *pb.RenderRequest) (*pb.Void, error) {
+	render := rt.NewRender(int(in.Width), in.AspectRatio)
+	render.SamplesPerPixel = int(in.SamplesPerPixel)
+	render.MaxDepth = int(in.MaxDepth)
 
-	// Try to parse the scene data
-	_, err := rt.ParseScene(in.SceneData)
+	// Try to parse the scene data, we don't need the scene or camera, just need to know if it's valid
+	_, _, err := rt.ParseScene(in.SceneData, render.Width, render.Height)
 	if err != nil {
 		log.Printf("Failed to parse scene data\n%s", err.Error())
 		return nil, status.Errorf(codes.Aborted, "Failed to parse scene data: %s", err.Error())
@@ -51,15 +54,9 @@ func (s *server) StartRender(ctx context.Context, in *pb.RenderRequest) (*pb.Voi
 		OutputName:   time.Now().Format("2006-01-02_15:04:05"),
 	}
 
-	sceneData := in.SceneData
-
-	render := rt.NewRender(int(in.ImageDetails.Width), in.ImageDetails.AspectRatio)
-	render.SamplesPerPixel = int(in.SamplesPerPixel)
-	render.MaxDepth = int(in.MaxDepth)
-
 	slices := 12
-	jobW := int(in.ImageDetails.Width)
-	jobH := int(in.ImageDetails.Height) / slices
+	jobW := int(render.Width)
+	jobH := int(render.Height) / slices
 
 	img = render.MakeImage()
 
@@ -68,14 +65,13 @@ func (s *server) StartRender(ctx context.Context, in *pb.RenderRequest) (*pb.Voi
 		for x := 0; x < render.Width; x += jobW {
 			netRender.JobQueue.Store(jobIdCounter, &pb.JobRequest{
 				Id:              jobIdCounter,
-				SceneId:         "test",
 				Width:           int32(jobW),
 				Height:          int32(jobH),
 				X:               int32(x),
 				Y:               int32(y),
 				SamplesPerPixel: int32(render.SamplesPerPixel),
 				MaxDepth:        int32(render.MaxDepth),
-				ImageDetails:    render.ToProto(),
+				ImageDetails:    render.ImageDetails(),
 			})
 
 			jobIdCounter++
@@ -93,7 +89,10 @@ func (s *server) StartRender(ctx context.Context, in *pb.RenderRequest) (*pb.Voi
 
 		timeoutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		w.Client.LoadScene(timeoutCtx, &pb.SceneRaw{Data: string(sceneData)})
+		w.Client.PrepareRender(timeoutCtx, &pb.PrepRenderRequest{
+			SceneData:    in.SceneData,
+			ImageDetails: render.ImageDetails(),
+		})
 
 		netRender.JobQueue.Range(func(jobId, job interface{}) bool {
 			if maxJobs == 0 {

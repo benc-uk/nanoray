@@ -28,6 +28,20 @@ func (v *RGB) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
+func FromHexString(hex string) RGB {
+	var r, g, b uint8
+	fmt.Sscanf(hex, "#%02x%02x%02x", &r, &g, &b)
+	return RGB{float64(r) / 255, float64(g) / 255, float64(b) / 255}
+}
+
+func From8Bit(r, g, b uint8) RGB {
+	return RGB{float64(r) / 255, float64(g) / 255, float64(b) / 255}
+}
+
+func (c RGB) ToHexString() string {
+	return fmt.Sprintf("#%02x%02x%02x", uint8(c.R*255), uint8(c.G*255), uint8(c.B*255))
+}
+
 func (c *RGB) Clamp() {
 	c.R = math.Min(1, math.Max(0, c.R))
 	c.G = math.Min(1, math.Max(0, c.G))
@@ -109,4 +123,8 @@ func (c RGB) ToRGBA() color.RGBA {
 		uint8(math.Min(255, math.Max(0, c.B*255))),
 		255,
 	}
+}
+
+func (c RGB) String() string {
+	return fmt.Sprintf("[%.2f, %.2f, %.2f]", c.R, c.G, c.B)
 }

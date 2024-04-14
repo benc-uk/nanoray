@@ -118,7 +118,20 @@ func (v *Vec3) Negate() Vec3 {
 }
 
 func (v Vec3) String() string {
-	return fmt.Sprintf("[%f, %f, %f]", v.X, v.Y, v.Z)
+	return fmt.Sprintf("[%.2f, %.2f, %.2f]", v.X, v.Y, v.Z)
+}
+
+func (v Vec3) IsZero() bool {
+	return v.X == 0 && v.Y == 0 && v.Z == 0
+}
+
+func (v Vec3) IsNearZero() bool {
+	const s = 1e-8
+	return math.Abs(v.X) < s && math.Abs(v.Y) < s && math.Abs(v.Z) < s
+}
+
+func (v Vec3) Equals(v2 Vec3) bool {
+	return v.X == v2.X && v.Y == v2.Y && v.Z == v2.Z
 }
 
 // ============================================================

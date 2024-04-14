@@ -3,12 +3,10 @@ package main
 import (
 	"context"
 	"log"
-	"time"
 
 	"nanoray/lib/controller"
 	pb "nanoray/lib/proto"
 	"nanoray/lib/raytrace"
-	t "nanoray/lib/tuples"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -19,11 +17,7 @@ type server struct {
 }
 
 var scene *raytrace.Scene
-var c raytrace.Camera
-
-func init() {
-	c = raytrace.NewCamera(t.Vec3{0, 0, 0}, t.Zero(), 60)
-}
+var camera *raytrace.Camera
 
 func (s *server) NewJob(ctx context.Context, job *pb.JobRequest) (*pb.Void, error) {
 	log.Printf("Received job: %d", job.Id)
@@ -42,7 +36,7 @@ func runJob(job *pb.JobRequest) error {
 		return status.Errorf(codes.FailedPrecondition, "No scene loaded")
 	}
 
-	res := raytrace.RenderJob(job, *scene, c)
+	res := raytrace.RenderJob(job, *scene, *camera)
 	res.Worker = &workerInfo
 
 	_, err := controller.Client.JobComplete(context.Background(), res)
@@ -54,18 +48,17 @@ func runJob(job *pb.JobRequest) error {
 	return nil
 }
 
-func (s *server) LoadScene(ctx context.Context, in *pb.SceneRaw) (*pb.Void, error) {
-	log.Printf("Received new scene data, will parse it")
+func (s *server) PrepareRender(ctx context.Context, in *pb.PrepRenderRequest) (*pb.Void, error) {
+	log.Printf("Preparing render with new scene & camera data")
 
-	sceneData := in.Data
-	sceneNew, err := raytrace.ParseScene(sceneData)
+	sceneData := in.SceneData
+	sceneNew, cameraNew, err := raytrace.ParseScene(sceneData, int(in.ImageDetails.Width), int(in.ImageDetails.Height))
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "Failed to parse scene data: %s", err.Error())
 	}
 
 	scene = sceneNew
-
-	time.Sleep(1 * time.Second)
+	camera = cameraNew
 
 	return nil, nil
 }

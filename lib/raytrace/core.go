@@ -11,8 +11,8 @@ import (
 // ============================================================
 
 type Ray struct {
-	Origin    v.Vec3
-	Direction v.Vec3
+	Origin v.Vec3
+	Dir    v.Vec3
 }
 
 func NewRay(origin, direction v.Vec3) Ray {
@@ -41,23 +41,22 @@ func (r Ray) Shade(s Scene, depth int, maxDepth int) v.RGB {
 		randDir := normal.AddNew(v.RandVecSphere(true))
 		randRay := NewRay(hit.P, randDir)
 
-		bounceColour := randRay.Shade(s, depth+1, maxDepth)
+		hitColour := randRay.Shade(s, depth+1, maxDepth)
 
-		// Only return 50% of the object colour
+		// HACK: This is a placeholder
 		objColour := v.White().Blend(hit.O.Colour, 0.7)
-		bounceColour.Mult(objColour)
+		hitColour.Mult(objColour)
 
-		return bounceColour
+		return hitColour
 	}
 
-	// Miss, so pixel is background, a blueish gradient
-	t := 0.6 * (-r.Direction.Y + 1.0)
-	out := v.White().Blend(v.RGB{0.1, 0.1, 0.5}, t)
-	return out
+	unitDirection := r.Dir.NormalizeNew()
+	a := 0.5 * (-unitDirection.Y + 1.0)
+	return v.White().Blend(v.RGB{0.5, 0.7, 1.0}, a)
 }
 
 func (r Ray) GetPoint(t float64) v.Vec3 {
-	p := r.Direction.MultScalarNew(t)
+	p := r.Dir.MultScalarNew(t)
 	p.Add(r.Origin)
 	return p
 }

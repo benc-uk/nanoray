@@ -14,6 +14,7 @@ type Scene struct {
 
 type SceneFile struct {
 	Name    string            `yaml:"name"`
+	Camera  SceneFileCamera   `yaml:"camera"`
 	Objects []SceneFileObject `yaml:"objects"`
 }
 
@@ -24,14 +25,31 @@ type SceneFileObject struct {
 	Colour   t.RGB   `yaml:"colour"`
 }
 
-func ParseScene(sceneData string) (*Scene, error) {
+type SceneFileCamera struct {
+	Position t.Vec3  `yaml:"position"`
+	LookAt   t.Vec3  `yaml:"lookAt"`
+	Fov      float64 `yaml:"fov"`
+}
+
+func ParseScene(sceneData string, imgW, imgH int) (*Scene, *Camera, error) {
 	log.Printf("Parsing scene data: %d bytes", len(sceneData))
 
 	var sceneFile SceneFile
 	err := yaml.Unmarshal([]byte(sceneData), &sceneFile)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
+
+	if sceneFile.Camera.Fov == 0 {
+		log.Printf("No FOV specified, defaulting to 50")
+		sceneFile.Camera.Fov = 50
+	}
+
+	if sceneFile.Camera.Position.Equals(sceneFile.Camera.LookAt) {
+		log.Printf("Camera position and lookAt are the same, this is probably not what you want")
+	}
+
+	camera := NewCamera(imgW, imgH, sceneFile.Camera.Position, sceneFile.Camera.LookAt, sceneFile.Camera.Fov)
 
 	scene := &Scene{
 		Name:    sceneFile.Name,
@@ -49,14 +67,14 @@ func ParseScene(sceneData string) (*Scene, error) {
 			sphere.Colour = obj.Colour
 			scene.AddObject(sphere)
 
-			log.Printf("Added sphere at %v with radius %f", obj.Position, obj.Radius)
+			log.Printf("Added sphere at %v with radius %.1f", obj.Position, obj.Radius)
 			continue
 		}
 
 		log.Printf("Skipping unknown object type: %s", obj.Type)
 	}
 
-	return scene, nil
+	return scene, &camera, nil
 }
 
 func (s *Scene) AddObject(o Hitable) {

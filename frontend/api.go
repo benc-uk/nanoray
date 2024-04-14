@@ -26,7 +26,7 @@ func addAPIRoutes(mux *http.ServeMux, templates *HTMLRenderer) {
 
 		// Special case for when the render is complete
 		if data.CompletedJobs == data.TotalJobs {
-			templates.Render(w, "api/render-progress-end", data)
+			templates.Render(w, "api/render-end", data)
 			return
 		}
 
@@ -38,16 +38,13 @@ func addAPIRoutes(mux *http.ServeMux, templates *HTMLRenderer) {
 
 		width, _ := strconv.Atoi(r.FormValue("width"))
 		aspectRatio, _ := strconv.ParseFloat(r.FormValue("aspect"), 64)
-		height := int(float64(width) / aspectRatio)
+		//height := int(float64(width) / aspectRatio)
 		samplesPerPixel, _ := strconv.Atoi(r.FormValue("samples"))
 
 		_, err := controller.Client.StartRender(r.Context(), &proto.RenderRequest{
-			SceneData: sceneData,
-			ImageDetails: &proto.ImageDetails{
-				Width:       int32(width),
-				Height:      int32(height),
-				AspectRatio: aspectRatio,
-			},
+			SceneData:       sceneData,
+			Width:           int32(width),
+			AspectRatio:     aspectRatio,
 			SamplesPerPixel: int32(samplesPerPixel),
 			MaxDepth:        5,
 			ChunkSize:       1,

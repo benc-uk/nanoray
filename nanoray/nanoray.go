@@ -13,7 +13,6 @@ import (
 	"time"
 
 	rt "nanoray/lib/raytrace"
-	t "nanoray/lib/tuples"
 )
 
 func main() {
@@ -22,7 +21,7 @@ func main() {
 		flag.PrintDefaults()
 	}
 
-	inputScene := flag.String("file", "", "Scene file to render, in YAML format")
+	inputFile := flag.String("file", "", "Scene file to render, in YAML format")
 	outputFile := flag.String("output", "render.png", "Rendered output PNG file name")
 	width := flag.Int("width", 800, "Width of the output image")
 	aspectRatio := flag.Float64("aspect", 16.0/9.0, "Aspect ratio of the output image")
@@ -31,7 +30,7 @@ func main() {
 
 	flag.Parse()
 
-	if *inputScene == "" {
+	if *inputFile == "" {
 		flag.PrintDefaults()
 		log.Fatal("No scene file provided")
 	}
@@ -41,14 +40,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	cam := rt.NewCamera(t.Vec3{0, 0, 0}, t.Zero(), 60)
-
-	sceneData, err := os.ReadFile("scenes/test.yaml")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	scene, err := rt.ParseScene(string(sceneData))
+	sceneData, err := os.ReadFile(*inputFile)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -56,10 +48,16 @@ func main() {
 	render := rt.NewRender(*width, *aspectRatio)
 	render.SamplesPerPixel = *samplesPP
 	render.MaxDepth = *maxDepth
+	// cam := rt.NewCamera(render.Width, render.Height, t.Vec3{240, 150, 120}, t.Vec3{0, 0, -100}, 50)
+
+	scene, camera, err := rt.ParseScene(string(sceneData), render.Width, render.Height)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	log.Println("🚀 Rendering started...")
 
-	img := Generate(cam, *scene, render)
+	img := Generate(*camera, *scene, render)
 
 	log.Println("📷 Rendering complete")
 	log.Println("🔹 ⌚ Time:", rt.Stats.Time)
@@ -84,6 +82,10 @@ func Generate(c rt.Camera, s rt.Scene, render rt.Render) image.Image {
 	imageOut := render.MakeImage()
 
 	totalJobs := runtime.NumCPU()
+	if totalJobs > render.Height {
+		totalJobs = render.Height
+	}
+	// totalJobs := 1
 	jobW := render.Width
 	jobH := render.Height / totalJobs
 
@@ -95,14 +97,13 @@ func Generate(c rt.Camera, s rt.Scene, render rt.Render) image.Image {
 			go func() {
 				j := &proto.JobRequest{
 					Id:              int32(jobCount),
-					SceneId:         "", // Not used in CLI version of the renderer
 					Width:           int32(jobW),
 					Height:          int32(jobH),
 					X:               int32(x),
 					Y:               int32(y),
 					SamplesPerPixel: int32(render.SamplesPerPixel),
 					MaxDepth:        int32(render.MaxDepth),
-					ImageDetails:    render.ToProto(),
+					ImageDetails:    render.ImageDetails(),
 				}
 
 				jobCount++

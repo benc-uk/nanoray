@@ -6,7 +6,7 @@ option go_package = "raynet/pkg/proto";
 
 service Worker {
   rpc Ping(Void) returns (Void);
-  rpc LoadScene(SceneRaw) returns (Void);
+  rpc PrepareRender(PrepRenderRequest) returns (Void);
   rpc NewJob(JobRequest) returns (Void);
 }
 
@@ -24,15 +24,15 @@ service Controller {
 
 message RenderRequest {
   string sceneData = 1;
-  ImageDetails imageDetails = 2;
-  int32 samplesPerPixel = 3;
-  int32 chunkSize = 4;
-  int32 maxDepth = 5;
+  int32 width = 2;
+  double aspectRatio = 3;
+  int32 samplesPerPixel = 4;
+  int32 chunkSize = 5;
+  int32 maxDepth = 6;
 }
 
 message JobRequest {
   int32 id = 2;
-  string sceneId = 1;
   ImageDetails imageDetails = 3;
   int32 x = 4;      // Offset position X of this job in the image
   int32 y = 5;      // Offset position Y of this job in the image
@@ -68,8 +68,9 @@ message WorkerList {
   repeated WorkerInfo workers = 1;
 }
 
-message SceneRaw {
-  string data = 1;
+message PrepRenderRequest {
+  string sceneData = 1;
+  ImageDetails imageDetails = 2;
 }
 
 message Void {}
