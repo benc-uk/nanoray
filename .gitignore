@@ -5,3 +5,4 @@ lib/proto/*.go
 .tools/
 *.png
 !frontend/**/*.png
+!examples/*.png
