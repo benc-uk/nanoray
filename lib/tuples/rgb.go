@@ -10,7 +10,7 @@ type RGB struct {
 	R, G, B float64
 }
 
-func (v *RGB) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (c *RGB) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var data []float64
 	err := unmarshal(&data)
 	if err != nil {
@@ -21,9 +21,9 @@ func (v *RGB) UnmarshalYAML(unmarshal func(interface{}) error) error {
 		return fmt.Errorf("cannot unmarshal RGB from %v", data)
 	}
 
-	v.R = data[0]
-	v.G = data[1]
-	v.B = data[2]
+	c.R = data[0]
+	c.G = data[1]
+	c.B = data[2]
 
 	return nil
 }
@@ -46,26 +46,6 @@ func (c *RGB) Clamp() {
 	c.R = math.Min(1, math.Max(0, c.R))
 	c.G = math.Min(1, math.Max(0, c.G))
 	c.B = math.Min(1, math.Max(0, c.B))
-}
-
-func Black() RGB {
-	return RGB{0, 0, 0}
-}
-
-func Red() RGB {
-	return RGB{1, 0, 0}
-}
-
-func Green() RGB {
-	return RGB{0, 1, 0}
-}
-
-func Blue() RGB {
-	return RGB{0, 0, 1}
-}
-
-func White() RGB {
-	return RGB{1, 1, 1}
 }
 
 func (c *RGB) Add(c2 RGB) {
@@ -116,15 +96,54 @@ func (c RGB) MultNew(c2 RGB) RGB {
 	return RGB{c.R * c2.R, c.G * c2.G, c.B * c2.B}
 }
 
-func (c RGB) ToRGBA() color.RGBA {
+func (c RGB) ToRGBA(gamma float64) color.RGBA {
+	var r, g, b float64
+
+	r = c.R
+	g = c.G
+	b = c.B
+
+	// Gamma correction
+	r = math.Pow(r, 1/gamma)
+	g = math.Pow(g, 1/gamma)
+	b = math.Pow(b, 1/gamma)
+
+	r = math.Min(0.999, math.Max(0, r))
+	g = math.Min(0.999, math.Max(0, g))
+	b = math.Min(0.999, math.Max(0, b))
+
 	return color.RGBA{
-		uint8(math.Min(255, math.Max(0, c.R*255))),
-		uint8(math.Min(255, math.Max(0, c.G*255))),
-		uint8(math.Min(255, math.Max(0, c.B*255))),
+		uint8(r * 255),
+		uint8(g * 255),
+		uint8(b * 255),
 		255,
 	}
 }
 
 func (c RGB) String() string {
 	return fmt.Sprintf("[%.2f, %.2f, %.2f]", c.R, c.G, c.B)
+}
+
+// ============================================================================
+// Predefined colors
+// ============================================================================
+
+func Black() RGB {
+	return RGB{0, 0, 0}
+}
+
+func Red() RGB {
+	return RGB{1, 0, 0}
+}
+
+func Green() RGB {
+	return RGB{0, 1, 0}
+}
+
+func Blue() RGB {
+	return RGB{0, 0, 1}
+}
+
+func White() RGB {
+	return RGB{1, 1, 1}
 }

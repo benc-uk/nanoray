@@ -20,32 +20,26 @@ var scene *raytrace.Scene
 var camera *raytrace.Camera
 
 func (s *server) NewJob(ctx context.Context, job *pb.JobRequest) (*pb.Void, error) {
-	log.Printf("Received job: %d", job.Id)
+	if scene == nil {
+		return nil, status.Errorf(codes.FailedPrecondition, "No scene loaded")
+	}
 
-	go runJob(job)
+	go func(job *pb.JobRequest) {
+		// All the rendering work happens here
+		res := raytrace.RenderJob(job, *scene, *camera)
+		res.Worker = &workerInfo
 
-	return nil, nil
+		_, err := controller.Client.JobComplete(context.Background(), res)
+		if err != nil {
+			log.Printf("Failed to send completed job result: %s", err.Error())
+		}
+	}(job)
+
+	return &pb.Void{}, nil
 }
 
 func (s *server) Ping(ctx context.Context, in *pb.Void) (*pb.Void, error) {
-	return nil, nil
-}
-
-func runJob(job *pb.JobRequest) error {
-	if scene == nil {
-		return status.Errorf(codes.FailedPrecondition, "No scene loaded")
-	}
-
-	res := raytrace.RenderJob(job, *scene, *camera)
-	res.Worker = &workerInfo
-
-	_, err := controller.Client.JobComplete(context.Background(), res)
-	if err != nil {
-		log.Printf("Failed to send completed job result: %s", err.Error())
-		return err
-	}
-
-	return nil
+	return &pb.Void{}, nil
 }
 
 func (s *server) PrepareRender(ctx context.Context, in *pb.PrepRenderRequest) (*pb.Void, error) {
@@ -60,5 +54,5 @@ func (s *server) PrepareRender(ctx context.Context, in *pb.PrepRenderRequest) (*
 	scene = sceneNew
 	camera = cameraNew
 
-	return nil, nil
+	return &pb.Void{}, nil
 }

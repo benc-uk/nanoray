@@ -24,11 +24,11 @@ service Controller {
 
 message RenderRequest {
   string sceneData = 1;
-  int32 width = 2;
+  int32  width = 2;
   double aspectRatio = 3;
-  int32 samplesPerPixel = 4;
-  int32 chunkSize = 5;
-  int32 maxDepth = 6;
+  int32  samplesPerPixel = 4;
+  int32  maxDepth = 6;
+  int32  slices = 7;
 }
 
 message JobRequest {

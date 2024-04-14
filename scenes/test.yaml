@@ -1,20 +1,25 @@
 name: Test Scene
 
 camera:
-  position: [0, 150, 200]
-  lookAt: [50, 50, -100]
-  fov: 30
+  position: [-300, 90, 300]
+  lookAt: [70, 60, -100]
+  fov: 35
 
 objects:
   - type: sphere
-    position: [0, 50, -100]
-    radius: 50
+    position: [-50, 70, 44]
+    radius: 70
     colour: [0.8, 0, 0.7]
 
   - type: sphere
-    position: [200, 60, -100]
-    radius: 60
+    position: [200, 80, 174]
+    radius: 80
     colour: [0, 0.5, 0.9]
+
+  - type: sphere
+    position: [-200, 80, 44]
+    radius: 80
+    colour: [0, 0.8, 0.1]
 
   # The floor
   - type: sphere

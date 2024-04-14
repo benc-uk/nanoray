@@ -79,20 +79,21 @@ func RenderJob(job *proto.JobRequest, s Scene, c Camera) *proto.JobResult {
 
 	for y := 0; y < int(job.Height); y += 1 {
 		for x := 0; x < int(job.Width); x += 1 {
-			// Note that x and y are relative to the job, not the image
+			// Note that x and y are relative to the job, NOT the image
 			pixelX := int(job.X) + x
 			pixelY := int(job.Y) + y
 
 			pixel := t.Black()
 
-			// Path tracing with multiple samples
+			// Path tracing uses many samples
 			for i := 0; i < samples; i++ {
 				ray := c.MakeRay(pixelX, pixelY)
 				sample := ray.Shade(s, 0, int(job.MaxDepth))
 				pixel.AddSome(sample, sampleScale)
 			}
 
-			jobImg.Set(x, y, pixel.ToRGBA())
+			// TODO: Remove hard-coded gamma
+			jobImg.Set(x, y, pixel.ToRGBA(0.8))
 		}
 	}
 

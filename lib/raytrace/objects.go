@@ -6,7 +6,7 @@ import (
 )
 
 type Object struct {
-	Id       string
+	ID       string
 	Position t.Vec3
 	Material Material
 	Colour   t.RGB
@@ -25,7 +25,7 @@ func NewSphere(position t.Vec3, radius float64) (*Sphere, error) {
 	return &Sphere{
 		Object: Object{
 			Position: position,
-			Id:       "sphere_" + GenerateID("sphere") + position.String(),
+			ID:       "sphere_" + GenerateID("sphere") + position.String(),
 		},
 
 		Radius: radius,

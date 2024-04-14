@@ -3,4 +3,5 @@ node_modules/
 tmp/
 lib/proto/*.go
 .tools/
-**/output/*.png
+*.png
+!frontend/**/*.png

@@ -26,7 +26,7 @@ type server struct {
 var netRender *rt.NetworkRender
 var img *image.RGBA
 
-var jobIdCounter int32 = 0
+var jobID int32 = 0
 
 func (s *server) StartRender(ctx context.Context, in *pb.RenderRequest) (*pb.Void, error) {
 	render := rt.NewRender(int(in.Width), in.AspectRatio)
@@ -45,26 +45,22 @@ func (s *server) StartRender(ctx context.Context, in *pb.RenderRequest) (*pb.Voi
 		return nil, status.Errorf(codes.FailedPrecondition, "No workers available to start render")
 	}
 
-	netRender = &rt.NetworkRender{
-		Status:       rt.READY,
-		JobQueue:     sync.Map{},
-		JobsTotal:    0,
-		JobsComplete: 0,
-		Start:        time.Now(),
-		OutputName:   time.Now().Format("2006-01-02_15:04:05"),
+	slices := int(in.Slices)
+	if slices < 1 {
+		slices = 1
 	}
 
-	slices := 12
 	jobW := int(render.Width)
 	jobH := int(render.Height) / slices
 
 	img = render.MakeImage()
 
+	jobQueue := sync.Map{}
 	totalJobs := 0
 	for y := 0; y < render.Height; y += jobH {
 		for x := 0; x < render.Width; x += jobW {
-			netRender.JobQueue.Store(jobIdCounter, &pb.JobRequest{
-				Id:              jobIdCounter,
+			jobQueue.Store(jobID, &pb.JobRequest{
+				Id:              jobID,
 				Width:           int32(jobW),
 				Height:          int32(jobH),
 				X:               int32(x),
@@ -74,13 +70,21 @@ func (s *server) StartRender(ctx context.Context, in *pb.RenderRequest) (*pb.Voi
 				ImageDetails:    render.ImageDetails(),
 			})
 
-			jobIdCounter++
+			jobID++
 			totalJobs++
 		}
 	}
 
-	log.Printf("Starting render with %d jobs", totalJobs)
+	netRender = &rt.NetworkRender{
+		Status:       rt.READY,
+		JobQueue:     jobQueue,
+		JobsTotal:    totalJobs,
+		JobsComplete: 0,
+		Start:        time.Now(),
+		OutputName:   time.Now().Format("2006-01-02_15:04:05"),
+	}
 
+	log.Printf("Starting render with %d jobs", totalJobs)
 	netRender.JobsTotal = totalJobs
 
 	workers.Range(func(_, worker interface{}) bool {
@@ -89,10 +93,14 @@ func (s *server) StartRender(ctx context.Context, in *pb.RenderRequest) (*pb.Voi
 
 		timeoutCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		w.Client.PrepareRender(timeoutCtx, &pb.PrepRenderRequest{
+		_, err = w.Client.PrepareRender(timeoutCtx, &pb.PrepRenderRequest{
 			SceneData:    in.SceneData,
 			ImageDetails: render.ImageDetails(),
 		})
+		if err != nil {
+			log.Printf("Failed to prepare render on worker %s\n%s", w.Worker.Id, err.Error())
+			return false
+		}
 
 		netRender.JobQueue.Range(func(jobId, job interface{}) bool {
 			if maxJobs == 0 {
@@ -116,7 +124,7 @@ func (s *server) StartRender(ctx context.Context, in *pb.RenderRequest) (*pb.Voi
 		return true
 	})
 
-	return nil, nil
+	return &pb.Void{}, nil
 }
 
 func (s *server) JobComplete(ctx context.Context, result *pb.JobResult) (*pb.Void, error) {
@@ -129,7 +137,8 @@ func (s *server) JobComplete(ctx context.Context, result *pb.JobResult) (*pb.Voi
 	srcImg.Pix = result.ImageData
 
 	// Update the render image with the job result
-	draw.Draw(img, image.Rect(int(job.X), int(job.Y), int(job.X+job.Width), int(job.Y+job.Height)), srcImg, image.Point{0, 0}, draw.Src)
+	draw.Draw(img, image.Rect(int(job.X), int(job.Y), int(job.X+job.Width), int(job.Y+job.Height)),
+		srcImg, image.Point{0, 0}, draw.Src)
 
 	netRender.JobsComplete++
 
@@ -139,7 +148,8 @@ func (s *server) JobComplete(ctx context.Context, result *pb.JobResult) (*pb.Voi
 		log.Printf("Time to complete: %s", time.Since(netRender.Start))
 		log.Printf("All jobs completed, saving file!!!")
 
-		os.Mkdir("output", os.ModePerm)
+		_ = os.Mkdir("output", os.ModePerm)
+
 		f, err := os.Create(fmt.Sprintf("output/%s.png", netRender.OutputName))
 		if err != nil {
 			log.Printf("Failed to create render file\n%s", err.Error())
@@ -167,11 +177,14 @@ func (s *server) JobComplete(ctx context.Context, result *pb.JobResult) (*pb.Voi
 			worker := workerConn.(WorkerConnection)
 
 			netRender.JobQueue.Delete(nextJob.Id)
-			worker.Client.NewJob(context.Background(), nextJob)
+			_, err := worker.Client.NewJob(context.Background(), nextJob)
+			if err != nil {
+				log.Printf("Failed to send job %d to worker %s\n%s", nextJob.Id, worker.Worker.Id, err.Error())
+			}
 		}
 	}
 
-	return nil, nil
+	return &pb.Void{}, nil
 }
 
 func (s *server) GetProgress(ctx context.Context, in *pb.Void) (*pb.Progress, error) {
@@ -179,7 +192,7 @@ func (s *server) GetProgress(ctx context.Context, in *pb.Void) (*pb.Progress, er
 		return &pb.Progress{
 			TotalJobs:     0,
 			CompletedJobs: 0,
-			OutputName:    netRender.OutputName,
+			OutputName:    "",
 		}, nil
 	}
 

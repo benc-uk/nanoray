@@ -26,19 +26,20 @@ func addAPIRoutes(mux *http.ServeMux, templates *HTMLRenderer) {
 
 		// Special case for when the render is complete
 		if data.CompletedJobs == data.TotalJobs {
-			templates.Render(w, "api/render-end", data)
+			_ = templates.Render(w, "api/render-end", data)
 			return
 		}
 
-		templates.Render(w, "api/render-progress", data)
+		_ = templates.Render(w, "api/render-progress", data)
 	})
 
 	mux.HandleFunc("POST /api/render", func(w http.ResponseWriter, r *http.Request) {
 		sceneData := r.FormValue("sceneData")
 
 		width, _ := strconv.Atoi(r.FormValue("width"))
+		depth, _ := strconv.Atoi(r.FormValue("depth"))
+		slices, _ := strconv.Atoi(r.FormValue("slices"))
 		aspectRatio, _ := strconv.ParseFloat(r.FormValue("aspect"), 64)
-		//height := int(float64(width) / aspectRatio)
 		samplesPerPixel, _ := strconv.Atoi(r.FormValue("samples"))
 
 		_, err := controller.Client.StartRender(r.Context(), &proto.RenderRequest{
@@ -46,8 +47,8 @@ func addAPIRoutes(mux *http.ServeMux, templates *HTMLRenderer) {
 			Width:           int32(width),
 			AspectRatio:     aspectRatio,
 			SamplesPerPixel: int32(samplesPerPixel),
-			MaxDepth:        5,
-			ChunkSize:       1,
+			MaxDepth:        int32(depth),
+			Slices:          int32(slices),
 		})
 
 		if err != nil {
@@ -56,13 +57,13 @@ func addAPIRoutes(mux *http.ServeMux, templates *HTMLRenderer) {
 			return
 		}
 
-		templates.Render(w, "api/render-start", nil)
+		_ = templates.Render(w, "api/render-start", nil)
 	})
 
 	mux.HandleFunc("GET /api/render", func(w http.ResponseWriter, r *http.Request) {
 		data, _ := controller.Client.ListRenderedImages(r.Context(), nil)
 
-		templates.Render(w, "api/renders", data)
+		_ = templates.Render(w, "api/renders", data)
 	})
 
 	mux.HandleFunc("GET /api/render/{name}", func(w http.ResponseWriter, r *http.Request) {
@@ -74,6 +75,6 @@ func addAPIRoutes(mux *http.ServeMux, templates *HTMLRenderer) {
 		}
 
 		w.Header().Set("Content-Type", "image/png")
-		w.Write(data.Value)
+		_, _ = w.Write(data.Value)
 	})
 }

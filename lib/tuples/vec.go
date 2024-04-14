@@ -88,15 +88,15 @@ func (v Vec3) MultScalarNew(s float64) Vec3 {
 	return Vec3{v.X * s, v.Y * s, v.Z * s}
 }
 
-func (v1 Vec3) Dot(v2 Vec3) float64 {
-	return v1.X*v2.X + v1.Y*v2.Y + v1.Z*v2.Z
+func (v Vec3) Dot(v2 Vec3) float64 {
+	return v.X*v2.X + v.Y*v2.Y + v.Z*v2.Z
 }
 
-func (v1 Vec3) Cross(v2 Vec3) Vec3 {
+func (v Vec3) Cross(v2 Vec3) Vec3 {
 	return Vec3{
-		v1.Y*v2.Z - v1.Z*v2.Y,
-		v1.Z*v2.X - v1.X*v2.Z,
-		v1.X*v2.Y - v1.Y*v2.X,
+		v.Y*v2.Z - v.Z*v2.Y,
+		v.Z*v2.X - v.X*v2.Z,
+		v.X*v2.Y - v.Y*v2.X,
 	}
 }
 
@@ -146,7 +146,7 @@ func RandVecCube() Vec3 {
 	}
 }
 
-func RandVecSphere(normalize bool) Vec3 {
+func RandVecSphere(normalise bool) Vec3 {
 	var v Vec3
 	for {
 		v = RandVecCube()
@@ -155,7 +155,7 @@ func RandVecSphere(normalize bool) Vec3 {
 		}
 	}
 
-	if normalize {
+	if normalise {
 		v.Normalize()
 	}
 

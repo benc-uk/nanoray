@@ -82,7 +82,7 @@ func (s *server) RegisterWorker(ctx context.Context, worker *pb.WorkerInfo) (*pb
 
 	log.Printf("Workers online: %d", workerCount)
 
-	return nil, nil
+	return &pb.Void{}, nil
 }
 
 func (s *server) GetWorkers(ctx context.Context, in *pb.Void) (*pb.WorkerList, error) {
