@@ -115,7 +115,13 @@ func (v Vec3) Sqrt() Vec3 {
 	return Vec3{math.Sqrt(v.X), math.Sqrt(v.Y), math.Sqrt(v.Z)}
 }
 
-func (v *Vec3) Negate() Vec3 {
+func (v *Vec3) Negate() {
+	v.X = -v.X
+	v.Y = -v.Y
+	v.Z = -v.Z
+}
+
+func (v Vec3) NegateNew() Vec3 {
 	return Vec3{-v.X, -v.Y, -v.Z}
 }
 
@@ -173,6 +179,6 @@ func RandVecSphereHemisphere(normal Vec3) Vec3 {
 	if v.Dot(normal) > 0 {
 		return v
 	} else {
-		return v.Negate()
+		return v.NegateNew()
 	}
 }

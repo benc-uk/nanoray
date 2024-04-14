@@ -1,26 +1,25 @@
 name: Test Scene
 
 camera:
-  position: [-300, 190, 300]
+  position: [-300, 90, 300]
   lookAt: [70, 60, -100]
   fov: 35
 
 objects:
   - type: sphere
-    position: [10, 70, 11]
+    position: [-50, 70, 44]
     radius: 70
     material:
-      type: metal
-      colour: [0.8, 0.7, 0.7]
-      fuzz: 0.0
+      type: diffuse
+      colour: [0.8, 0, 0.7]
 
   - type: sphere
-    position: [200, 100, 174]
-    radius: 100
+    position: [200, 80, 174]
+    radius: 80
     material:
       type: metal
       colour: [0.3, 0.4, 0.9]
-      fuzz: 0.2
+      fuzz: 0.1
 
   - type: sphere
     position: [-200, 80, 44]
@@ -36,4 +35,4 @@ objects:
     material:
       type: metal
       colour: [0.7, 0.7, 0.7]
-      fuzz: 0.6
+      fuzz: 0.5

@@ -1,69 +1,29 @@
 package raytrace
 
 import (
-	"math"
 	t "nanoray/lib/tuples"
 )
 
+// All objects should embed this struct
 type Object struct {
 	ID       string
 	Position t.Vec3
 	Material Material
 }
 
-type Sphere struct {
-	Object
-	Radius float64
+type Hit struct {
+	T      float64
+	Pos    t.Vec3
+	Normal t.Vec3
+	Obj    Object
+	Front  bool
 }
 
-func NewSphere(position t.Vec3, radius float64) (*Sphere, error) {
-	if radius <= 0 {
-		return nil, ErrInvalidRadius
-	}
-
-	return &Sphere{
-		Object: Object{
-			Position: position,
-			ID:       "sphere_" + GenerateID("sphere") + position.String(),
-		},
-
-		Radius: radius,
-	}, nil
+// All objects should implement this interface
+type Hitable interface {
+	Hit(r Ray, i Interval) (bool, Hit)
 }
 
-func (s Sphere) Hit(r Ray, interval Interval) (bool, Hit) {
-	oc := r.Origin
-	oc.Sub(s.Position)
-
-	a := r.Dir.Dot(r.Dir)
-	b := oc.Dot(r.Dir)
-	c := oc.Dot(oc) - s.Radius*s.Radius
-
-	discriminant := b*b - a*c
-	if discriminant < 0 {
-		return false, Hit{}
-	}
-
-	sqrtDisc := math.Sqrt(discriminant)
-
-	t1 := (-b - sqrtDisc) / a
-	t2 := (-b + sqrtDisc) / a
-	t := t1
-	if t1 < interval.Min {
-		t = t2
-	}
-
-	if t > interval.Min && t < interval.Max {
-		hit := Hit{
-			T:      t,
-			P:      r.GetPoint(t),
-			Normal: r.GetPoint(t).SubNew(s.Position).NormalizeNew(),
-			O:      s.Object,
-			M:      s.Material,
-		}
-
-		return true, hit
-	}
-
-	return false, Hit{}
+func (h Hit) String() string {
+	return "Hit{" + h.Pos.String() + ", " + h.Normal.String() + "}"
 }

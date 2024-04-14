@@ -28,7 +28,7 @@ func (m DiffuseMaterial) scatter(r Ray, hit Hit) (bool, Ray, t.RGB) {
 		scatterDir = hit.Normal
 	}
 
-	scattered := NewRay(hit.P, scatterDir)
+	scattered := NewRay(hit.Pos, scatterDir)
 
 	return true, scattered, m.Albedo
 }
@@ -57,7 +57,7 @@ func (m MetalMaterial) scatter(r Ray, hit Hit) (bool, Ray, t.RGB) {
 	fuzz.MultScalar(m.Fuzz)
 	reflected.Add(fuzz)
 
-	scattered := NewRay(hit.P, reflected)
+	scattered := NewRay(hit.Pos, reflected)
 
 	return scattered.Dir.Dot(hit.Normal) > 0, scattered, m.Albedo
 }

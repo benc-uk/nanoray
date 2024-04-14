@@ -47,7 +47,7 @@ run-worker: ## 🏃 Run worker service
 	@clear
 	cd worker && air
 
-run: ## 💫 Run the standalone Nanoray CLI
+run: ## 💫 Run the standalone Nanoray version
 	@figlet $@ || true
 	@clear
 	go run nanoray/nanoray output/test.png
