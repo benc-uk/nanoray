@@ -37,17 +37,16 @@ func (r Ray) Shade(s Scene, depth int, maxDepth int) v.RGB {
 	}
 
 	if hit != nil {
-		normal := hit.Normal
-		randDir := normal.AddNew(v.RandVecSphere(true))
-		randRay := NewRay(hit.P, randDir)
+		// Hit something, scatter a new ray from surface material
+		didScatter, scatterRay, attenColour := hit.M.scatter(r, *hit)
+		if didScatter {
+			// Recurse and shade the scattered ray
+			scatterColour := scatterRay.Shade(s, depth+1, maxDepth)
+			scatterColour.Mult(attenColour)
+			return scatterColour
+		}
 
-		hitColour := randRay.Shade(s, depth+1, maxDepth)
-
-		// HACK: This is a placeholder
-		objColour := v.White().Blend(hit.O.Colour, 0.7)
-		hitColour.Mult(objColour)
-
-		return hitColour
+		return v.Black()
 	}
 
 	unitDirection := r.Dir.NormalizeNew()
@@ -70,6 +69,7 @@ type Hit struct {
 	P      v.Vec3
 	Normal v.Vec3
 	O      Object
+	M      Material
 }
 
 type Hitable interface {
@@ -116,15 +116,4 @@ func (i Interval) String() string {
 	minStr := strconv.FormatFloat(i.Min, 'f', -1, 64)
 	maxStr := strconv.FormatFloat(i.Max, 'f', -1, 64)
 	return "Interval{" + minStr + ", " + maxStr + "}"
-}
-
-// ============================================================
-// Materials (placeholder for now)
-// ============================================================
-
-type DiffuseMaterial struct {
-}
-
-type Material interface {
-	scatter(r Ray, hit Hit) (bool, Ray)
 }

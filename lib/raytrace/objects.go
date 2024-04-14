@@ -9,7 +9,6 @@ type Object struct {
 	ID       string
 	Position t.Vec3
 	Material Material
-	Colour   t.RGB
 }
 
 type Sphere struct {
@@ -60,6 +59,7 @@ func (s Sphere) Hit(r Ray, interval Interval) (bool, Hit) {
 			P:      r.GetPoint(t),
 			Normal: r.GetPoint(t).SubNew(s.Position).NormalizeNew(),
 			O:      s.Object,
+			M:      s.Material,
 		}
 
 		return true, hit

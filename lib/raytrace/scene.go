@@ -19,10 +19,16 @@ type SceneFile struct {
 }
 
 type SceneFileObject struct {
-	Type     string  `yaml:"type"`
-	Position t.Vec3  `yaml:"position"`
-	Radius   float64 `yaml:"radius"`
-	Colour   t.RGB   `yaml:"colour"`
+	Type     string            `yaml:"type"`
+	Position t.Vec3            `yaml:"position"`
+	Radius   float64           `yaml:"radius"`
+	Material SceneFileMaterial `yaml:"material"`
+}
+
+type SceneFileMaterial struct {
+	Type   string  `yaml:"type"`
+	Colour t.RGB   `yaml:"colour"`
+	Fuzz   float64 `yaml:"fuzz"`
 }
 
 type SceneFileCamera struct {
@@ -64,14 +70,24 @@ func ParseScene(sceneData string, imgW, imgH int) (*Scene, *Camera, error) {
 				log.Printf("Failed to create sphere: %s", err.Error())
 				continue
 			}
-			sphere.Colour = obj.Colour
+
+			switch obj.Material.Type {
+			case "diffuse":
+				log.Printf("Adding diffuse material")
+				sphere.Material = NewDiffuseMaterial(obj.Material.Colour)
+			case "metal":
+				sphere.Material = NewMetalMaterial(obj.Material.Colour, obj.Material.Fuzz)
+			default:
+				log.Printf("Unknown material type: %s", obj.Material.Type)
+			}
+
+			log.Printf("Adding sphere with material: %s", obj.Material.Type)
 			scene.AddObject(sphere)
 
 			log.Printf("Added sphere at %v with radius %.1f", obj.Position, obj.Radius)
-			continue
+		default:
+			log.Printf("Unknown object type: %s", obj.Type)
 		}
-
-		log.Printf("Skipping unknown object type: %s", obj.Type)
 	}
 
 	return scene, &camera, nil

@@ -80,8 +80,10 @@ func (v Vec3) DivNew(s float64) Vec3 {
 	return Vec3{v.X / s, v.Y / s, v.Z / s}
 }
 
-func (v Vec3) MultScalar(s float64) Vec3 {
-	return Vec3{v.X * s, v.Y * s, v.Z * s}
+func (v *Vec3) MultScalar(s float64) {
+	v.X *= s
+	v.Y *= s
+	v.Z *= s
 }
 
 func (v Vec3) MultScalarNew(s float64) Vec3 {
@@ -117,8 +119,8 @@ func (v *Vec3) Negate() Vec3 {
 	return Vec3{-v.X, -v.Y, -v.Z}
 }
 
-func (v Vec3) String() string {
-	return fmt.Sprintf("[%.2f, %.2f, %.2f]", v.X, v.Y, v.Z)
+func (v Vec3) Reflect(normal Vec3) Vec3 {
+	return v.SubNew(normal.MultScalarNew(2 * v.Dot(normal)))
 }
 
 func (v Vec3) IsZero() bool {
@@ -132,6 +134,10 @@ func (v Vec3) IsNearZero() bool {
 
 func (v Vec3) Equals(v2 Vec3) bool {
 	return v.X == v2.X && v.Y == v2.Y && v.Z == v2.Z
+}
+
+func (v Vec3) String() string {
+	return fmt.Sprintf("[%.2f, %.2f, %.2f]", v.X, v.Y, v.Z)
 }
 
 // ============================================================

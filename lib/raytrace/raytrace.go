@@ -85,7 +85,7 @@ func RenderJob(job *proto.JobRequest, s Scene, c Camera) *proto.JobResult {
 
 			pixel := t.Black()
 
-			// Path tracing uses many samples
+			// Path tracing uses many, many samples!
 			for i := 0; i < samples; i++ {
 				ray := c.MakeRay(pixelX, pixelY)
 				sample := ray.Shade(s, 0, int(job.MaxDepth))
