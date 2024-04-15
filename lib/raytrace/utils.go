@@ -6,6 +6,9 @@ import (
 	"strconv"
 )
 
+// -
+// Generate a unique ID from a string
+// -
 func GenerateID(input string) string {
 	hash := sha256.New()
 	hash.Write([]byte(input))

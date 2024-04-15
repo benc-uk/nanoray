@@ -27,7 +27,7 @@ type SceneFileObject struct {
 
 type SceneFileMaterial struct {
 	Type   string  `yaml:"type"`
-	Colour t.RGB   `yaml:"colour"`
+	Albedo t.RGB   `yaml:"albedo"`
 	Fuzz   float64 `yaml:"fuzz"`
 }
 
@@ -37,6 +37,9 @@ type SceneFileCamera struct {
 	Fov      float64 `yaml:"fov"`
 }
 
+// -
+// Parse a scene & camera from a YAML string
+// -
 func ParseScene(sceneData string, imgW, imgH int) (*Scene, *Camera, error) {
 	log.Printf("Parsing scene data: %d bytes", len(sceneData))
 
@@ -74,9 +77,9 @@ func ParseScene(sceneData string, imgW, imgH int) (*Scene, *Camera, error) {
 			switch obj.Material.Type {
 			case "diffuse":
 				log.Printf("Adding diffuse material")
-				sphere.Material = NewDiffuseMaterial(obj.Material.Colour)
+				sphere.Material = NewDiffuseMaterial(obj.Material.Albedo)
 			case "metal":
-				sphere.Material = NewMetalMaterial(obj.Material.Colour, obj.Material.Fuzz)
+				sphere.Material = NewMetalMaterial(obj.Material.Albedo, obj.Material.Fuzz)
 			default:
 				log.Printf("Unknown material type: %s", obj.Material.Type)
 			}
@@ -93,6 +96,9 @@ func ParseScene(sceneData string, imgW, imgH int) (*Scene, *Camera, error) {
 	return scene, &camera, nil
 }
 
+// -
+// Add an object to the scene
+// -
 func (s *Scene) AddObject(o Hitable) {
 	s.Objects = append(s.Objects, o)
 }

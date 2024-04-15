@@ -9,14 +9,6 @@ import (
 	"time"
 )
 
-// Enum for render status
-const (
-	READY = iota
-	STARTED
-	COMPLETE
-	FAILED
-)
-
 type Statistics struct {
 	Start time.Time
 	End   time.Time
@@ -26,7 +18,6 @@ type Statistics struct {
 
 type NetworkRender struct {
 	Lock         sync.Mutex
-	Status       int
 	JobQueue     sync.Map
 	JobsTotal    int
 	JobsComplete int
@@ -34,9 +25,10 @@ type NetworkRender struct {
 	OutputName   string
 }
 
+// Output image details and other shared parameters for rendering
 type Render struct {
 	Width           int     `yaml:"width"`
-	Height          int     `yaml:"height"`
+	Height          int     `yaml:"height"` // Do not set this directly
 	AspectRatio     float64 `yaml:"aspectRatio"`
 	SamplesPerPixel int     `yaml:"samplesPerPixel"`
 	MaxDepth        int     `yaml:"maxDepth"`
@@ -46,21 +38,29 @@ var (
 	Stats Statistics = Statistics{}
 )
 
+// -
+// Create a new render object with the given width and aspect ratio
+// -
 func NewRender(width int, aspectRatio float64) Render {
-	// Create a default render object
 	return Render{
 		Width:           width,
 		Height:          int(float64(width) / aspectRatio),
 		AspectRatio:     aspectRatio,
-		SamplesPerPixel: 10,
-		MaxDepth:        5,
+		SamplesPerPixel: 10, // Some simple defaults
+		MaxDepth:        5,  // Also a decent default
 	}
 }
 
+// -
+// Create an output image buffer for rendering
+// -
 func (r Render) MakeImage() *image.RGBA {
 	return image.NewRGBA(image.Rect(0, 0, r.Width, r.Height))
 }
 
+// -
+// Helper to convert to a proto.ImageDetails object for gRPC
+// -
 func (r Render) ImageDetails() *proto.ImageDetails {
 	return &proto.ImageDetails{
 		Width:       int32(r.Width),
@@ -69,6 +69,10 @@ func (r Render) ImageDetails() *proto.ImageDetails {
 	}
 }
 
+// -
+// Heart of the raytracing engine, render a job and return the result
+// A job is essentially a subsection of the image to render
+// -
 func RenderJob(job *proto.JobRequest, s Scene, c Camera) *proto.JobResult {
 	log.Printf("Rendering job %4d: slice:%4d/%4d samp:%d", job.Id, job.Height, job.Y, job.SamplesPerPixel)
 
@@ -93,14 +97,12 @@ func RenderJob(job *proto.JobRequest, s Scene, c Camera) *proto.JobResult {
 			}
 
 			// TODO: Remove hard-coded gamma
-			jobImg.Set(x, y, pixel.ToRGBA(0.8))
+			jobImg.Set(x, y, pixel.ToRGBA(1.95))
 		}
 	}
 
-	jobRes := proto.JobResult{
+	return &proto.JobResult{
 		ImageData: jobImg.Pix,
 		Job:       job,
 	}
-
-	return &jobRes
 }

@@ -96,17 +96,16 @@ func (c RGB) MultNew(c2 RGB) RGB {
 	return RGB{c.R * c2.R, c.G * c2.G, c.B * c2.B}
 }
 
+// -
+// Convert to a color.RGBA object with gamma correction
+// -
 func (c RGB) ToRGBA(gamma float64) color.RGBA {
 	var r, g, b float64
 
-	r = c.R
-	g = c.G
-	b = c.B
-
 	// Gamma correction
-	r = math.Pow(r, 1/gamma)
-	g = math.Pow(g, 1/gamma)
-	b = math.Pow(b, 1/gamma)
+	r = math.Pow(c.R, 1/gamma)
+	g = math.Pow(c.G, 1/gamma)
+	b = math.Pow(c.B, 1/gamma)
 
 	r = math.Min(0.999, math.Max(0, r))
 	g = math.Min(0.999, math.Max(0, g))

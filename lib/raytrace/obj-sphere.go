@@ -5,11 +5,15 @@ import (
 	t "nanoray/lib/tuples"
 )
 
+// Sphere represents a simple sphere object
 type Sphere struct {
 	Object
 	Radius float64
 }
 
+// -
+// Create a new sphere object at given position & radius
+// -
 func NewSphere(position t.Vec3, radius float64) (*Sphere, error) {
 	if radius <= 0 {
 		return nil, ErrInvalidRadius
@@ -25,6 +29,9 @@ func NewSphere(position t.Vec3, radius float64) (*Sphere, error) {
 	}, nil
 }
 
+// -
+// Implement the Hitable interface for a sphere object
+// -
 func (s Sphere) Hit(r Ray, interval Interval) (bool, Hit) {
 	oc := r.Origin
 	oc.Sub(s.Position)

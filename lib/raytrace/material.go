@@ -1,36 +1,53 @@
 package raytrace
 
 import (
+	"math"
 	t "nanoray/lib/tuples"
 )
 
+// Material interface for all materials
 type Material interface {
-	scatter(r Ray, hit Hit) (bool, Ray, t.RGB)
+	// Used when shading a hit point on this material
+	scatter(r Ray, hit Hit) (didScatter bool, scattedRay Ray, attenuation t.RGB)
+
+	// Used when calculating emitted light from this material
+	emitted() t.RGB
 }
 
 // ============================================================
-// Diffuse Lambertian material
+// DiffuseMaterial represents a perfect Lambertian or ideal diffuse material
 // ============================================================
 
 type DiffuseMaterial struct {
 	Albedo t.RGB
 }
 
-func NewDiffuseMaterial(c t.RGB) DiffuseMaterial {
+// -
+// Create a new DiffuseMaterial with given albedo color
+// -
+func NewDiffuseMaterial(albedo t.RGB) DiffuseMaterial {
 	return DiffuseMaterial{
-		Albedo: c,
+		Albedo: albedo,
 	}
 }
 
+// -
+// Scattering function for a diffuse material
+// -
 func (m DiffuseMaterial) scatter(r Ray, hit Hit) (bool, Ray, t.RGB) {
+	// Scatter in a random direction in unit sphere around the normal
 	scatterDir := hit.Normal.AddNew(t.RandVecSphere(true))
 	if scatterDir.IsNearZero() {
 		scatterDir = hit.Normal
 	}
 
-	scattered := NewRay(hit.Pos, scatterDir)
+	scatterRay := NewRay(hit.Pos, scatterDir)
 
-	return true, scattered, m.Albedo
+	return true, scatterRay, m.Albedo
+}
+
+func (m DiffuseMaterial) emitted() t.RGB {
+	return t.Black()
 }
 
 // ============================================================
@@ -39,25 +56,35 @@ func (m DiffuseMaterial) scatter(r Ray, hit Hit) (bool, Ray, t.RGB) {
 
 type MetalMaterial struct {
 	Albedo t.RGB
-	Fuzz   float64
+	Fuzz   float64 // Brushed or fuzzy look of the metal
 }
 
-func NewMetalMaterial(c t.RGB, f float64) MetalMaterial {
+// -
+// Create a new MetalMaterial with given albedo color and fuzziness
+// -
+func NewMetalMaterial(albedo t.RGB, fuzz float64) MetalMaterial {
 	return MetalMaterial{
-		Albedo: c,
-		Fuzz:   f,
+		Albedo: albedo,
+		Fuzz:   math.Max(0, math.Min(fuzz, 1)),
 	}
 }
 
 func (m MetalMaterial) scatter(r Ray, hit Hit) (bool, Ray, t.RGB) {
-	reflected := r.Dir.Reflect(hit.Normal)
-	reflected.Normalize()
+	// Metal is reflective
+	scatterDir := r.Dir.Reflect(hit.Normal)
+	scatterDir.Normalize()
 
+	// Add some randomness to the reflected ray
 	fuzz := t.RandVecSphere(false)
 	fuzz.MultScalar(m.Fuzz)
-	reflected.Add(fuzz)
+	scatterDir.Add(fuzz)
 
-	scattered := NewRay(hit.Pos, reflected)
+	scatterRay := NewRay(hit.Pos, scatterDir)
 
-	return scattered.Dir.Dot(hit.Normal) > 0, scattered, m.Albedo
+	didScatter := scatterRay.Dir.Dot(hit.Normal) > 0
+	return didScatter, scatterRay, m.Albedo
+}
+
+func (m MetalMaterial) emitted() t.RGB {
+	return t.Black()
 }

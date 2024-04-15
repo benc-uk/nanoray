@@ -76,7 +76,6 @@ func (s *server) StartRender(ctx context.Context, in *pb.RenderRequest) (*pb.Voi
 	}
 
 	netRender = &rt.NetworkRender{
-		Status:       rt.READY,
 		JobQueue:     jobQueue,
 		JobsTotal:    totalJobs,
 		JobsComplete: 0,
@@ -162,8 +161,6 @@ func (s *server) JobComplete(ctx context.Context, result *pb.JobResult) (*pb.Voi
 			log.Printf("Failed to encode render image\n%s", err.Error())
 			return nil, err
 		}
-
-		netRender.Status = rt.COMPLETE
 	} else {
 		var nextJob *pb.JobRequest = nil
 		netRender.JobQueue.Range(func(_, job interface{}) bool {

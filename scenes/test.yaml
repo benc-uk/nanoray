@@ -11,14 +11,14 @@ objects:
     radius: 70
     material:
       type: diffuse
-      colour: [0.8, 0, 0.7]
+      albedo: [0.8, 0, 0.7]
 
   - type: sphere
     position: [200, 80, 174]
     radius: 80
     material:
       type: metal
-      colour: [0.3, 0.4, 0.9]
+      albedo: [0.3, 0.4, 0.9]
       fuzz: 0.1
 
   - type: sphere
@@ -26,7 +26,7 @@ objects:
     radius: 80
     material:
       type: diffuse
-      colour: [0, 0.8, 0.1]
+      albedo: [0, 0.8, 0.1]
 
   # The floor
   - type: sphere
@@ -34,5 +34,5 @@ objects:
     radius: 9000000
     material:
       type: metal
-      colour: [0.7, 0.7, 0.7]
+      albedo: [0.7, 0.7, 0.7]
       fuzz: 0.5
