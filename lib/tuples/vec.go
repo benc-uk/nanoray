@@ -129,6 +129,21 @@ func (v Vec3) Reflect(normal Vec3) Vec3 {
 	return v.SubNew(normal.MultScalarNew(2 * v.Dot(normal)))
 }
 
+func (v Vec3) Refract(normal Vec3, etaiOverEtat float64) Vec3 {
+	// Code from https://raytracing.github.io/books/RayTracingInOneWeekend.html#dielectrics
+
+	cosTheta := math.Min(v.NegateNew().Dot(normal), 1.0)
+
+	// vec3 r_out_perp =  etai_over_etat * (uv + cos_theta*n);
+	rOutPerp := normal.MultScalarNew(cosTheta).AddNew(v).MultScalarNew(etaiOverEtat)
+
+	// vec3 r_out_parallel = -sqrt(fabs(1.0 - r_out_perp.length_squared())) * n;
+	rOutPar := normal.MultScalarNew(-math.Sqrt(math.Abs(1.0 - rOutPerp.SquaredLength())))
+
+	// return r_out_perp + r_out_parallel;
+	return rOutPerp.AddNew(rOutPar)
+}
+
 func (v Vec3) IsZero() bool {
 	return v.X == 0 && v.Y == 0 && v.Z == 0
 }
@@ -146,10 +161,17 @@ func (v Vec3) String() string {
 	return fmt.Sprintf("[%.2f, %.2f, %.2f]", v.X, v.Y, v.Z)
 }
 
+func (v Vec3) Clone() Vec3 {
+	return Vec3{v.X, v.Y, v.Z}
+}
+
 // ============================================================
 // Random Vec3 functions for path tracing
 // ============================================================
 
+// -
+// Generate a random vector inside the unit cube
+// -
 func RandVecCube() Vec3 {
 	return Vec3{
 		rand.Float64()*2 - 1,
@@ -158,10 +180,34 @@ func RandVecCube() Vec3 {
 	}
 }
 
+// -
+// Generate a random vector inside the unit sphere
+// -
 func RandVecSphere(normalise bool) Vec3 {
 	var v Vec3
+	// Keep generating random vectors until we get one inside the unit sphere
 	for {
 		v = RandVecCube()
+		if v.SquaredLength() < 1 {
+			break
+		}
+	}
+
+	if normalise {
+		v.Normalize()
+	}
+
+	return v
+}
+
+// -
+// Generate a random vector inside the unit disk
+// -
+func RandVecDisk(normalise bool) Vec3 {
+	var v Vec3
+
+	for {
+		v = Vec3{rand.Float64()*2 - 1, rand.Float64()*2 - 1, 0}
 		if v.SquaredLength() < 1 {
 			break
 		}

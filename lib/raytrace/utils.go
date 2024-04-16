@@ -3,6 +3,7 @@ package raytrace
 import (
 	"crypto/sha256"
 	"fmt"
+	"math"
 	"strconv"
 )
 
@@ -52,4 +53,13 @@ func (i Interval) String() string {
 	minStr := strconv.FormatFloat(i.Min, 'f', -1, 64)
 	maxStr := strconv.FormatFloat(i.Max, 'f', -1, 64)
 	return "Interval{" + minStr + ", " + maxStr + "}"
+}
+
+// -
+// Schlick's approximation for reflectance
+// -
+func reflectance(cosine float64, ior float64) float64 {
+	r0 := (1 - ior) / (1 + ior)
+	r0 = r0 * r0
+	return r0 + (1-r0)*math.Pow((1-cosine), 5)
 }

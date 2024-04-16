@@ -2,6 +2,7 @@ package raytrace
 
 import (
 	"math"
+	"math/rand"
 	t "nanoray/lib/tuples"
 )
 
@@ -86,5 +87,62 @@ func (m MetalMaterial) scatter(r Ray, hit Hit) (bool, Ray, t.RGB) {
 }
 
 func (m MetalMaterial) emitted() t.RGB {
+	return t.Black()
+}
+
+// ============================================================
+// Dielectric which transmits light e.g. glass, water etc
+// ============================================================
+
+type DielectricMaterial struct {
+	IOR  float64
+	Fuzz float64
+	Tint t.RGB
+}
+
+// -
+// Create a new DielectricMaterial with given index of refraction
+// -
+func NewDielectricMaterial(ior float64, fuzz float64, tint t.RGB) DielectricMaterial {
+	if fuzz < 0 {
+		fuzz = 0
+	}
+
+	return DielectricMaterial{
+		IOR:  ior,
+		Fuzz: fuzz,
+		Tint: tint,
+	}
+}
+
+func (m DielectricMaterial) scatter(r Ray, hit Hit) (bool, Ray, t.RGB) {
+	attenuation := m.Tint
+	ri := m.IOR
+	if hit.Front {
+		ri = 1.0 / m.IOR
+	}
+
+	cosTheta := math.Min(r.Dir.NegateNew().Dot(hit.Normal), 1.0)
+	sinTheta := math.Sqrt(1.0 - cosTheta*cosTheta)
+	reflect := ri*sinTheta > 1.0
+
+	var scatterDir t.Vec3
+	if reflect || reflectance(cosTheta, ri) > rand.Float64() {
+		// Reflect the ray
+		scatterDir = r.Dir.Reflect(hit.Normal)
+	} else {
+		// Refract the ray
+		scatterDir = r.Dir.Refract(hit.Normal, ri)
+		// Allow for frosted glass effect
+		fuzz := t.RandVecSphere(false)
+		fuzz.MultScalar(m.Fuzz)
+		scatterDir.Add(fuzz)
+	}
+
+	scatterRay := NewRay(hit.Pos, scatterDir)
+	return true, scatterRay, attenuation
+}
+
+func (m DielectricMaterial) emitted() t.RGB {
 	return t.Black()
 }

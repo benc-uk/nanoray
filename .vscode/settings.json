@@ -4,5 +4,8 @@
   },
   "gopls": {
     "analyses": { "composites": false }
+  },
+  "yaml.schemas": {
+    "schemas/scene.json": "*.yaml"
   }
 }

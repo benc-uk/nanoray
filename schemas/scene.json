@@ -1,0 +1,113 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+
+  "title": "NanoRay Scene File",
+  "type": "object",
+  "required": ["camera", "name", "objects"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "examples": ["My Scene"]
+    },
+    "camera": {
+      "$ref": "#/definitions/Camera"
+    },
+    "objects": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Object"
+      }
+    }
+  },
+
+  "definitions": {
+    "Camera": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "position": {
+          "$ref": "#/definitions/Vec3"
+        },
+        "lookAt": {
+          "$ref": "#/definitions/Vec3"
+        },
+        "fov": {
+          "type": "number",
+          "examples": [50.0]
+        },
+        "focalDist": {
+          "type": "number"
+        },
+        "aperture": {
+          "type": "number"
+        }
+      },
+      "required": ["lookAt", "position"],
+      "title": "Camera"
+    },
+
+    "Object": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["sphere"]
+        },
+        "position": {
+          "$ref": "#/definitions/Vec3"
+        },
+        "radius": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "material": {
+          "$ref": "#/definitions/Material"
+        }
+      },
+      "required": ["material", "position", "radius", "type"],
+      "title": "Object"
+    },
+
+    "Material": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["diffuse", "metal", "dielectric"]
+        },
+        "albedo": {
+          "$ref": "#/definitions/RGB"
+        },
+        "fuzz": {
+          "type": "number"
+        },
+        "ior": {
+          "type": "number"
+        }
+      },
+      "required": ["type"],
+      "title": "Material"
+    },
+
+    "Vec3": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    },
+
+    "RGB": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    }
+  }
+}

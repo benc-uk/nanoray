@@ -56,8 +56,8 @@ func (r Ray) Shade(scene Scene, depth int, maxDepth int) t.RGB {
 
 	// On miss return a fake sky gradient thing
 	unitDirection := r.Dir.NormalizeNew()
-	a := 0.5 * (-unitDirection.Y + 1.0)
-	return t.White().Blend(t.RGB{0.5, 0.7, 1.0}, a)
+	a := 0.6 * (-unitDirection.Y + 1.0)
+	return t.White().Blend(t.RGB{0.1, 0.1, 1.0}, a)
 }
 
 // -

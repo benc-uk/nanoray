@@ -29,12 +29,15 @@ type SceneFileMaterial struct {
 	Type   string  `yaml:"type"`
 	Albedo t.RGB   `yaml:"albedo"`
 	Fuzz   float64 `yaml:"fuzz"`
+	IOR    float64 `yaml:"ior"`
 }
 
 type SceneFileCamera struct {
-	Position t.Vec3  `yaml:"position"`
-	LookAt   t.Vec3  `yaml:"lookAt"`
-	Fov      float64 `yaml:"fov"`
+	Position  t.Vec3  `yaml:"position"`
+	LookAt    t.Vec3  `yaml:"lookAt"`
+	Fov       float64 `yaml:"fov"`
+	FocalDist float64 `yaml:"focalDist"`
+	Aperture  float64 `yaml:"aperture"`
 }
 
 // -
@@ -58,7 +61,8 @@ func ParseScene(sceneData string, imgW, imgH int) (*Scene, *Camera, error) {
 		log.Printf("Camera position and lookAt are the same, this is probably not what you want")
 	}
 
-	camera := NewCamera(imgW, imgH, sceneFile.Camera.Position, sceneFile.Camera.LookAt, sceneFile.Camera.Fov)
+	camera := NewCamera(imgW, imgH, sceneFile.Camera.Position,
+		sceneFile.Camera.LookAt, sceneFile.Camera.Fov, sceneFile.Camera.FocalDist, sceneFile.Camera.Aperture)
 
 	scene := &Scene{
 		Name:    sceneFile.Name,
@@ -80,8 +84,11 @@ func ParseScene(sceneData string, imgW, imgH int) (*Scene, *Camera, error) {
 				sphere.Material = NewDiffuseMaterial(obj.Material.Albedo)
 			case "metal":
 				sphere.Material = NewMetalMaterial(obj.Material.Albedo, obj.Material.Fuzz)
+			case "dielectric":
+				sphere.Material = NewDielectricMaterial(obj.Material.IOR, obj.Material.Fuzz, obj.Material.Albedo)
 			default:
 				log.Printf("Unknown material type: %s", obj.Material.Type)
+				continue
 			}
 
 			log.Printf("Adding sphere with material: %s", obj.Material.Type)
