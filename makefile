@@ -35,17 +35,17 @@ lint-fix: ## 📝 Lint & format, attempts to fix errors & modify code
 run-controller: ## 🧠 Run controller service
 	@figlet $@ || true
 	@clear
-	cd controller && @$(AIR_PATH) 
+	cd controller && $(AIR_PATH) 
 
 run-frontend: ## 🌐 Run frontend service
 	@figlet $@ || true
 	@clear
-	cd frontend && @$(AIR_PATH) 
+	cd frontend && $(AIR_PATH) 
 
 run-worker: ## 🏃 Run worker service
 	@figlet $@ || true
 	@clear
-	cd worker && @$(AIR_PATH) 
+	cd worker && $(AIR_PATH) 
 
 run: ## 💫 Run the standalone Nanoray version
 	@figlet $@ || true
