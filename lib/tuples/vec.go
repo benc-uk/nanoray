@@ -165,6 +165,15 @@ func (v Vec3) Clone() Vec3 {
 	return Vec3{v.X, v.Y, v.Z}
 }
 
+func ParseVec3(data any) (Vec3, error) {
+	tuple, ok := data.([]any)
+	if !ok {
+		return Zero(), fmt.Errorf("ParseVec3: Failed to convert data to array: %+v", data)
+	}
+
+	return Vec3{tuple[0].(float64), tuple[1].(float64), tuple[2].(float64)}, nil
+}
+
 // ============================================================
 // Random Vec3 functions for path tracing
 // ============================================================

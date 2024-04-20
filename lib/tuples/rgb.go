@@ -123,6 +123,36 @@ func (c RGB) String() string {
 	return fmt.Sprintf("[%.2f, %.2f, %.2f]", c.R, c.G, c.B)
 }
 
+func ParseRGB(data any) (RGB, error) {
+	if data == nil {
+		return Black(), fmt.Errorf("ParseRGB: Data is nil")
+	}
+
+	tuple, ok := data.([]any)
+	if !ok {
+		return Black(), fmt.Errorf("ParseRGB: Failed to convert data to array: %+v", data)
+	}
+
+	// check if the array has 3 elements
+	if len(tuple) != 3 {
+		return Black(), fmt.Errorf("ParseRGB: Must have 3 elements, but got: %d", len(tuple))
+	}
+
+	// convert array elements to float64
+	for i := 0; i < 3; i++ {
+		switch v := tuple[i].(type) {
+		case int:
+			tuple[i] = float64(v)
+		case float64:
+			// do nothing
+		default:
+			return Black(), fmt.Errorf("ParseRGB: Invalid data type: %T %v", tuple[i], tuple[i])
+		}
+	}
+
+	return RGB{tuple[0].(float64), tuple[1].(float64), tuple[2].(float64)}, nil
+}
+
 // ============================================================================
 // Predefined colors
 // ============================================================================

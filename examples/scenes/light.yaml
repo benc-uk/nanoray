@@ -1,0 +1,35 @@
+name: Light Test
+background: [0.02, 0.02, 0.02]
+
+camera:
+  position: [0, 13, 20]
+  lookAt: [0, 0, -50]
+  fov: 20
+  # focalDist: 30
+  # aperture: 1.4
+
+objects:
+  # Small sphere
+  - type: sphere
+    position: [0, 8, -30]
+    radius: 8
+    material:
+      diffuse:
+        albedo: [0.9, 0.2, 0.1]
+
+  # ========================================
+
+  # Big Light
+  - type: sphere
+    position: [25, 60, -15]
+    radius: 25
+    material:
+      light:
+        emission: [5, 5, 5]
+  # Floor
+  - type: sphere
+    position: [0, -9000000, 0]
+    radius: 9000000
+    material:
+      diffuse:
+        albedo: [0.7, 0.7, 0.7]

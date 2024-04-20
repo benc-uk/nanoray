@@ -1,0 +1,26 @@
+name: Simple Test
+background: [0.7, 0.7, 0.8]
+
+camera:
+  position: [0, 13, 0]
+  lookAt: [0, 0, -35]
+  fov: 40
+  focalDist: 30
+  aperture: 1.4
+
+objects:
+  # Small sphere
+  - type: sphere
+    position: [0, 8, -30]
+    radius: 8
+    material:
+      diffuse:
+        albedo: [0.85, 0.1, 0.1]
+
+  # Floor
+  - type: sphere
+    position: [0, -9000000, 0]
+    radius: 9000000
+    material:
+      diffuse:
+        albedo: [0.7, 0.7, 0.7]

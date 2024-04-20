@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"math"
+	t "nanoray/lib/tuples"
 	"strconv"
 )
 
@@ -62,4 +63,33 @@ func reflectance(cosine float64, ior float64) float64 {
 	r0 := (1 - ior) / (1 + ior)
 	r0 = r0 * r0
 	return r0 + (1-r0)*math.Pow((1-cosine), 5)
+}
+
+// ============================================================
+// Axis-aligned bounding box
+// ============================================================
+
+type AABB struct {
+	Min t.Vec3
+	Max t.Vec3
+}
+
+func NewAABB(min, max t.Vec3) AABB {
+	return AABB{min, max}
+}
+
+func (a *AABB) SurroundingBox(other AABB) AABB {
+	small := t.Vec3{
+		math.Min(a.Min.X, other.Min.X),
+		math.Min(a.Min.Y, other.Min.Y),
+		math.Min(a.Min.Z, other.Min.Z),
+	}
+
+	big := t.Vec3{
+		math.Max(a.Max.X, other.Max.X),
+		math.Max(a.Max.Y, other.Max.Y),
+		math.Max(a.Max.Z, other.Max.Z),
+	}
+
+	return AABB{small, big}
 }

@@ -41,23 +41,26 @@ func (r Ray) Shade(scene Scene, depth int, maxDepth int) t.RGB {
 	}
 
 	if hit != nil {
+		emissionColour := hit.Obj.Material.emitted(r, *hit)
+
 		// Hit something, scatter a new ray from surface based on material
 		scattered, scatterRay, attenColour := hit.Obj.Material.scatter(r, *hit)
-		if scattered {
-			// Recurse and shade the scattered ray
-			scatterColour := scatterRay.Shade(scene, depth+1, maxDepth)
-			// Magic to blend the scattered colour with the attenuation colour
-			scatterColour.Mult(attenColour)
-			return scatterColour
+		if !scattered {
+			return emissionColour
 		}
 
-		return t.Black()
+		// Recurse and shade the scattered ray
+		scatterColour := scatterRay.Shade(scene, depth+1, maxDepth)
+		// Magic to blend the scattered colour with the attenuation colour
+		scatterColour.Mult(attenColour)
+
+		// Return the emission colour + scattered colour
+		return emissionColour.AddNew(scatterColour)
+
 	}
 
-	// On miss return a fake sky gradient thing
-	unitDirection := r.Dir.NormalizeNew()
-	a := 0.6 * (-unitDirection.Y + 1.0)
-	return t.White().Blend(t.RGB{0.1, 0.1, 1.0}, a)
+	// On miss return the background colour
+	return scene.Background
 }
 
 // -

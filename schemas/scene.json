@@ -18,6 +18,9 @@
       "items": {
         "$ref": "#/definitions/Object"
       }
+    },
+    "background": {
+      "$ref": "#/definitions/RGB"
     }
   },
 
@@ -63,33 +66,87 @@
           "minimum": 0.0
         },
         "material": {
-          "$ref": "#/definitions/Material"
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "diffuse": {
+                  "$ref": "#/definitions/DiffuseMaterial"
+                }
+              },
+              "title": "DiffuseMaterial"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "dielectric": {
+                  "$ref": "#/definitions/DielectricMaterial"
+                }
+              },
+              "title": "DielectricMaterial"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "metal": {
+                  "$ref": "#/definitions/MetalMaterial"
+                }
+              },
+              "title": "MetalMaterial"
+            }
+          ]
         }
       },
       "required": ["material", "position", "radius", "type"],
       "title": "Object"
     },
 
-    "Material": {
+    "DiffuseMaterial": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "type": {
-          "type": "string",
-          "enum": ["diffuse", "metal", "dielectric"]
+        "albedo": {
+          "$ref": "#/definitions/RGB"
+        }
+      },
+      "required": ["albedo"],
+      "title": "DiffuseMaterial"
+    },
+
+    "DielectricMaterial": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tint": {
+          "$ref": "#/definitions/RGB"
         },
+        "fuzz": {
+          "type": "number",
+          "minimum": 0.0
+        },
+        "ior": {
+          "type": "number",
+          "minimum": 0.0
+        }
+      },
+      "required": ["ior"],
+      "title": "DielectricMaterial"
+    },
+
+    "MetalMaterial": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
         "albedo": {
           "$ref": "#/definitions/RGB"
         },
         "fuzz": {
-          "type": "number"
-        },
-        "ior": {
-          "type": "number"
+          "type": "number",
+          "minimum": 0.0
         }
       },
-      "required": ["type"],
-      "title": "Material"
+      "required": ["albedo"],
+      "title": "MetalMaterial"
     },
 
     "Vec3": {
@@ -104,7 +161,8 @@
     "RGB": {
       "type": "array",
       "items": {
-        "type": "number"
+        "type": "number",
+        "minimum": 0.0
       },
       "minItems": 3,
       "maxItems": 3

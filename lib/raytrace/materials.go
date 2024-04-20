@@ -12,7 +12,9 @@ type Material interface {
 	scatter(r Ray, hit Hit) (didScatter bool, scattedRay Ray, attenuation t.RGB)
 
 	// Used when calculating emitted light from this material
-	emitted() t.RGB
+	emitted(r Ray, hit Hit) t.RGB
+
+	Type() string
 }
 
 // ============================================================
@@ -47,8 +49,12 @@ func (m DiffuseMaterial) scatter(r Ray, hit Hit) (bool, Ray, t.RGB) {
 	return true, scatterRay, m.Albedo
 }
 
-func (m DiffuseMaterial) emitted() t.RGB {
+func (m DiffuseMaterial) emitted(r Ray, hit Hit) t.RGB {
 	return t.Black()
+}
+
+func (m DiffuseMaterial) Type() string {
+	return "diffuse"
 }
 
 // ============================================================
@@ -86,8 +92,12 @@ func (m MetalMaterial) scatter(r Ray, hit Hit) (bool, Ray, t.RGB) {
 	return didScatter, scatterRay, m.Albedo
 }
 
-func (m MetalMaterial) emitted() t.RGB {
+func (m MetalMaterial) emitted(r Ray, hit Hit) t.RGB {
 	return t.Black()
+}
+
+func (m MetalMaterial) Type() string {
+	return "metal"
 }
 
 // ============================================================
@@ -133,16 +143,48 @@ func (m DielectricMaterial) scatter(r Ray, hit Hit) (bool, Ray, t.RGB) {
 	} else {
 		// Refract the ray
 		scatterDir = r.Dir.Refract(hit.Normal, ri)
-		// Allow for frosted glass effect
-		fuzz := t.RandVecSphere(false)
-		fuzz.MultScalar(m.Fuzz)
-		scatterDir.Add(fuzz)
+		// Fuzz can give us a frosted glass effect
+		if m.Fuzz > 0 {
+			fuzz := t.RandVecSphere(false)
+			fuzz.MultScalar(m.Fuzz)
+			scatterDir.Add(fuzz)
+		}
 	}
 
 	scatterRay := NewRay(hit.Pos, scatterDir)
 	return true, scatterRay, attenuation
 }
 
-func (m DielectricMaterial) emitted() t.RGB {
+func (m DielectricMaterial) emitted(r Ray, hit Hit) t.RGB {
 	return t.Black()
+}
+
+func (m DielectricMaterial) Type() string {
+	return "dielectric"
+}
+
+// ============================================================
+// Light emitting material
+// ============================================================
+
+type LightMaterial struct {
+	Emission t.RGB
+}
+
+func NewLightMaterial(emission t.RGB) LightMaterial {
+	return LightMaterial{
+		Emission: emission,
+	}
+}
+
+func (m LightMaterial) scatter(r Ray, hit Hit) (bool, Ray, t.RGB) {
+	return false, Ray{}, t.Black()
+}
+
+func (m LightMaterial) emitted(r Ray, hit Hit) t.RGB {
+	return m.Emission
+}
+
+func (m LightMaterial) Type() string {
+	return "light"
 }
