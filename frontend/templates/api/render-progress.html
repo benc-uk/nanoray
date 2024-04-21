@@ -1,5 +1,12 @@
 {{ define "api/render-progress" }}
 
-<progress max="{{ .TotalJobs }}" value="{{ .CompletedJobs }}" hx-get="api/render/progress" hx-trigger="every 0.5s" hx-swap="outerHTML"></progress> 
+<progress max="{{ .TotalJobs }}" value="{{ .CompletedJobs }}" hx-get="api/render/progress" hx-trigger="load delay:0.5s" hx-swap="outerHTML">
+</progress> 
+
+<div id="output" class="mt-4" hx-swap-oob="true" style="text-align: center;">
+  <img src="spinner.svg" style="width: 25%;"/>
+</div>
+
+<button id="startBtn" class="button is-primary mb-4" disabled hx-swap-oob="true">Render</button>
 
 {{ end }}

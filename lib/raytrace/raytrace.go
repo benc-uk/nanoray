@@ -97,7 +97,7 @@ func RenderJob(job *proto.JobRequest, s Scene, c Camera) *proto.JobResult {
 			}
 
 			// TODO: Remove hard-coded gamma
-			jobImg.Set(x, y, pixel.ToRGBA(1.2))
+			jobImg.Set(x, y, pixel.ToRGBA(s.Gamma))
 		}
 	}
 

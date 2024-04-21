@@ -1,16 +1,20 @@
 # NanoRay - A Network Distributed Path Tracer
 
-Words here
+Every few years I have to write a new ray tracer, this is my latest attempt in 2024
 
 - Written in Go
-- Uses Protobuf and gRPC
+- Uses [Protobuf](https://protobuf.dev/) and gRPC
 - Distributed architecture: controller + worker(s)
 - Designed to parallel process, over CPU cores on each worker machine and across multiple workers
-- Frontend uses HTMX
+- Frontend uses [HTMX](https://htmx.org/)
 - YAML based [scene description language](./schemas/scene.json)
 - Path tracing code based heavily on https://raytracing.github.io/books/RayTracingInOneWeekend.html
 
-Image output at 2560x1080 with 300 samples per pixel, rendered in ~3mins on a "farm" of two laptop grade machines.
+Caustics and lights
+
+![screen](./examples/renders/2024-04-20_16_14_53.jpg)
+
+Christmas!
 
 ![screen](./examples/renders/2024-04-14_17_52_31.png)
 

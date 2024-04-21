@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
@@ -68,7 +69,9 @@ func addAPIRoutes(mux *http.ServeMux, templates *HTMLRenderer) {
 
 	mux.HandleFunc("GET /api/render/{name}", func(w http.ResponseWriter, r *http.Request) {
 		name := r.PathValue("name")
-		data, err := controller.Client.GetRenderedImage(r.Context(), wrapperspb.String(name))
+		// Set max message size to 64MB
+		maxSizeOption := grpc.MaxCallRecvMsgSize(64 * 10e6)
+		data, err := controller.Client.GetRenderedImage(r.Context(), wrapperspb.String(name), maxSizeOption)
 		if err != nil {
 			http.Error(w, "Failed to get rendered image "+err.Error(), http.StatusInternalServerError)
 			return

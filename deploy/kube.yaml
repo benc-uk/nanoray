@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nanoray-worker
+spec:
+  selector:
+    matchLabels:
+      app: nanoray-worker
+  template:
+    metadata:
+      labels:
+        app: nanoray-worker
+    spec:
+      containers:
+        - name: worker
+          imagePullPolicy: Always
+          image: bendev.azurecr.io/nanoray/worker:latest
+          ports:
+            - containerPort: 4000
+          env:
+            - name: CONTROLLER_ADDR
+              value: "nanoray-controller:5000"
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+      tolerations:
+        - key: "kubernetes.azure.com/scalesetpriority"
+          operator: "Equal"
+          value: "spot"
+          effect: "NoSchedule"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nanoray-controller
+spec:
+  selector:
+    matchLabels:
+      app: nanoray-controller
+  template:
+    metadata:
+      labels:
+        app: nanoray-controller
+    spec:
+      containers:
+        - name: worker
+          imagePullPolicy: Always
+          image: bendev.azurecr.io/nanoray/controller:latest
+          ports:
+            - containerPort: 5000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nanoray-frontend
+spec:
+  selector:
+    matchLabels:
+      app: nanoray-frontend
+  template:
+    metadata:
+      labels:
+        app: nanoray-frontend
+    spec:
+      containers:
+        - name: worker
+          imagePullPolicy: Always
+          image: bendev.azurecr.io/nanoray/frontend:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: CONTROLLER_ADDR
+              value: "nanoray-controller:5000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nanoray-controller
+spec:
+  selector:
+    app: nanoray-controller
+  ports:
+    - protocol: TCP
+      port: 5000
+      targetPort: 5000
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nanoray-frontend
+spec:
+  selector:
+    app: nanoray-frontend
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+  type: LoadBalancer

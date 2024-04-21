@@ -1,0 +1,4 @@
+**/*.png
+tmp/
+!frontend/**/*.png
+!examples/*.png

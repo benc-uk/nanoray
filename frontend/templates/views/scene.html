@@ -75,7 +75,7 @@
       <label class="label">Samples</label>
       <div class="is-flex">
       <div class="input" name="samples">
-        <input name="samples" type="range" min="1" max="500" value="20" oninput="document.querySelector('#samplesNum').value=this.value"/>
+        <input name="samples" type="range" min="1" max="2000" value="20" oninput="document.querySelector('#samplesNum').value=this.value"/>
       </div>
       <input class="input" name="samples" disabled style="width: 3.2rem;" id="samplesNum" value="20"/>
     </div>
@@ -84,7 +84,7 @@
     <div class="field pr-4">
       <label class="label">&nbsp;</label>
       <div class="control">
-        <button id="startBtn" class="button is-primary mb-4" hx-post="api/render" hx-swap="none" hx-on:click="clearError(); this.disabled = true">Render</button>
+        <button id="startBtn" class="button is-primary mb-4" hx-post="api/render" hx-swap="none">Render</button>
       </div>
     </div>
   </div>
@@ -92,14 +92,41 @@
   <input type="hidden" name="sceneData" value="">
 </form>
 
+
 <div id="monaco" style="height: 25vh"></div>
 
 <script>
+  defaultScene = `name: Simple Test
+background: [0.7, 0.7, 0.8]
+
+camera:
+  position: [0, 13, 0]
+  lookAt: [0, 0, -40]
+  fov: 40
+  focalDist: 30
+  aperture: 1.4
+
+objects:
+  - type: sphere
+    position: [0, 10, -30]
+    radius: 10
+    material:
+      diffuse:
+        albedo: [0.95, 0.1, 0.1]
+
+  - type: sphere
+    position: [0, -9000000, 0]
+    radius: 9000000
+    material:
+      diffuse:
+        albedo: [0.7, 0.7, 0.7]
+  `
+
   require.config({ paths: { 'vs': '/monaco/min/vs' }});
   
   require(['vs/editor/editor.main'], function() {
     var editor = monaco.editor.create(document.getElementById('monaco'), {
-      value: localStorage.getItem('sceneText') || 'objects:\n  - type: sphere\n    position: [0, 0, -50]\n    radius: 20\n    colour: [1,0,0]',
+      value: localStorage.getItem('sceneText') || defaultScene,
       theme: 'vs-dark',
       language: 'yaml',
       minimap: {
@@ -119,7 +146,8 @@
   });
 </script>
 
-<div id="progress">
+<!-- We call this on load in case a render is already in progress -->
+<div id="progress" hx-get="api/render/progress" hx-trigger="load">
 </div>
 
 <div id="output">

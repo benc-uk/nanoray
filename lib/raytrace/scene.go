@@ -10,12 +10,14 @@ import (
 type Scene struct {
 	Name       string
 	Background t.RGB
+	Gamma      float64
 	Objects    []Hitable
 }
 
 type File struct {
 	Name       string       `yaml:"name"`
 	Background t.RGB        `yaml:"background"`
+	Gamma      float64      `yaml:"gamma"`
 	Camera     FileCamera   `yaml:"camera"`
 	Objects    []FileObject `yaml:"objects"`
 }
@@ -80,10 +82,17 @@ func ParseScene(sceneData string, imgW, imgH int) (*Scene, *Camera, error) {
 	camera := NewCamera(imgW, imgH, File.Camera.Position,
 		File.Camera.LookAt, File.Camera.Fov, File.Camera.FocalDist, File.Camera.Aperture)
 
+	gamma := File.Gamma
+	if gamma == 0 {
+		log.Printf("No gamma specified, defaulting to 2.2")
+		gamma = 2.2
+	}
+
 	scene := &Scene{
 		Name:       File.Name,
 		Objects:    []Hitable{},
 		Background: File.Background,
+		Gamma:      gamma,
 	}
 
 	for _, obj := range File.Objects {

@@ -15,6 +15,10 @@ AIR_PATH := $(REPO_ROOT)/.tools/air
 .PHONY: help image push build run lint lint-fix
 .DEFAULT_GOAL := help
 
+IMAGE_REG ?= bendev.azurecr.io
+IMAGE_NAME ?= nanoray
+IMAGE_TAG ?= latest
+
 help: ## 💬 This help message :)
 	@figlet $@ || true
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(firstword $(MAKEFILE_LIST)) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -58,7 +62,7 @@ clean: ## 🧹 Clean up, remove dev data and temp files
 	@find . -type d -name tmp -exec rm -r "{}" \; || true
 	@rm -f controller/output/*.png
 
-proto: ## 🚀 Generate protobuf files
+proto: ## 🚀 Generate protobuf code
 	@figlet $@ || true
 	@protoc > /dev/null 2>&1 || (echo "💥 Error! protoc is not installed!"; exit 1)
 	@protoc-gen-go --help > /dev/null 2>&1 || (echo "💥 Error! protoc-gen-go is not installed!"; exit 1)
@@ -66,8 +70,19 @@ proto: ## 🚀 Generate protobuf files
 	  --go_opt=paths=source_relative --go-grpc_opt=paths=source_relative --proto_path=lib/proto \
 	  lib/proto/*.proto
 
-# check-vars:
-# 	@if [[ -z "${IMAGE_REG}" ]]; then echo "💥 Error! Required variable IMAGE_REG is not set!"; exit 1; fi
-# 	@if [[ -z "${IMAGE_NAME}" ]]; then echo "💥 Error! Required variable IMAGE_NAME is not set!"; exit 1; fi
-# 	@if [[ -z "${IMAGE_TAG}" ]]; then echo "💥 Error! Required variable IMAGE_TAG is not set!"; exit 1; fi
-# 	@if [[ -z "${VERSION}" ]]; then echo "💥 Error! Required variable VERSION is not set!"; exit 1; fi
+images: ## 📦 Build container images
+	@figlet $@ || true
+	@docker build -t $(IMAGE_REG)/$(IMAGE_NAME)/frontend:$(IMAGE_TAG) -f frontend/Dockerfile .
+	@docker build -t $(IMAGE_REG)/$(IMAGE_NAME)/controller:$(IMAGE_TAG) -f controller/Dockerfile .
+	@docker build -t $(IMAGE_REG)/$(IMAGE_NAME)/worker:$(IMAGE_TAG) -f worker/Dockerfile .
+
+push: ## 📦 Push container images
+	@figlet $@ || true
+	@docker push $(IMAGE_REG)/$(IMAGE_NAME)/frontend:$(IMAGE_TAG)
+	@docker push $(IMAGE_REG)/$(IMAGE_NAME)/controller:$(IMAGE_TAG)
+	@docker push $(IMAGE_REG)/$(IMAGE_NAME)/worker:$(IMAGE_TAG)
+
+check-vars:
+	@if [[ -z "${IMAGE_REG}" ]];  then echo "💥 Error! Required variable IMAGE_REG is not set!"; exit 1; fi
+	@if [[ -z "${IMAGE_NAME}" ]]; then echo "💥 Error! Required variable IMAGE_NAME is not set!"; exit 1; fi
+	@if [[ -z "${IMAGE_TAG}" ]];  then echo "💥 Error! Required variable IMAGE_TAG is not set!"; exit 1; fi

@@ -153,6 +153,10 @@ func ParseRGB(data any) (RGB, error) {
 	return RGB{tuple[0].(float64), tuple[1].(float64), tuple[2].(float64)}, nil
 }
 
+func (c RGB) Equals(c2 RGB) bool {
+	return c.R == c2.R && c.G == c2.G && c.B == c2.B
+}
+
 // ============================================================================
 // Predefined colors
 // ============================================================================
